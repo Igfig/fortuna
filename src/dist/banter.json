@@ -1,0 +1,149 @@
+[
+	{
+		"id" : "rudeness",
+		"patterns_text" : [
+			"(?<!to\\s)(?<!from\\s)\\s*\\b<name>\\b",
+			"fuck(?! yes| yeah)|bitch|bribe|cheat|cock|cunt|damn|dammit|dick|harpy|shrew|heartless|horrible|hussy|slut|suck|terrible|trash|whore|\\bhate\\b|(?:shut up)"
+		],
+		"responses" : [
+			["Excuse me?"], 
+			["I beg your pardon?"],  
+			["Don't be a bad sport."],
+			["That's no way to speak to a lady."], 
+			["Well, I never!"], 
+			["I won't dignify that with a response."], 
+			["Did you hear what that jackass just called me?"],
+			["No."],
+			["KICK Come back when you know how to treat a lady."]
+		],
+		"types" : ["retort"],
+		"stop_progression" : true
+	},
+	
+	{
+		"id" : "compliment_strong",
+		"patterns_text" : [
+			"(?<!to )(?<!from )\\b<name>\\b",
+			"beautiful|darling|dearest|divine|goddess|gorgeous|love|lovely|marry|perfect|waifu|wife"
+		],
+		"responses" : [
+			["ACTION blushes."], 
+			["ACTION smiles shyly."],
+			["ACTION giggles."],
+			["Oh my."]
+		],
+		"types" : ["flattered"],
+		"stop_progression" : false
+	},
+	
+	{
+		"id" : "compliment_mild",
+		"patterns_text" : [
+			"(?<!to )(?<!from )\\b<name>\\b",
+			"<3|amazing|best|classy|dear(?!est)|flawless|great|good job|sweet|\\bily\\b|\\bilu\\b",
+			"(?<!\\?)$"
+		],
+		"responses" : [
+			["I know."],
+			["Right back at you."],
+			["Wish I could say the same for you."],
+			["Obviously."],
+			["Naturally."],
+			["ACTION smiles."],
+			["ACTION grins."]
+		],
+		"types" : ["flattered", "answer"],
+		"stop_progression" : false
+	},
+	
+	{
+		"id" : "compliment_question",
+		"patterns_text" : [
+			"(?<!to )(?<!from )\\b<name>\\b",
+			"<3|amazing|best|classy|dear(?!est)|flawless|great|sweet|\\bily\\b|\\bilu\\b",
+			"\\?$"
+		],
+		"responses" : [
+			["Obviously."],
+			["Naturally."],
+			["ACTION smiles."],
+			["ACTION grins."]
+		],
+		"types" : ["flattered", "answer"],
+		"stop_progression" : false
+	},
+	
+	{
+		"id" : "thanks",
+		"patterns_text" : [
+			"(?<!from )\\b<name>\\b",
+			"thank|merci\\b"
+		],
+		"responses" : [
+			["You're welcome."],
+			["Don't mention it."]
+		],
+		"types" : ["welcome"],
+		"stop_progression" : false
+	},
+	
+	{
+		"id" : "goodbye",
+		"patterns_text" : [
+			"\\b<name>\\b",
+			"bye|good ?night|later|farewell"
+		],
+		"responses" : [
+			["Goodbye."],
+			["Good night."]
+		],
+		"types" : ["greeting"],
+		"stop_progression" : false
+	},
+	
+	{
+		"id" : "hello",
+		"patterns_text" : [
+			"\\b<name>\\b",
+			"hello|\\bhi\\b|what'?s? up|\\bsup\\b|\\byo\\b|how'?s it going"
+		],
+		"responses" : [
+			["Hello."],
+			["Good evening."]
+		],
+		"types" : ["greeting"],
+		"stop_progression" : false
+	},
+	
+	{
+		"id" : "question",
+		"patterns_text" : [
+			"\\?$",
+			"^<name>|<name>\\?$|, <name>|<name>,"
+		],
+		"responses" : [
+			["Yes."], ["No."], ["Maybe."],
+			["Probably."], ["Probably not."],
+			["Definitely."], ["Definitely not."],
+			["For sure."], ["I don't think so."],
+			["Of course."], ["Of course not."],
+			["I have no idea."], ["Ask again later."],
+			["I sure hope so."], ["I sure hope not."],
+			["I could tell you...", "But I probably shouldn't."],
+			["That would be a terrible idea.", "But I'm going to say yes anyway."],
+			["Oh god, no.", "That would be awful."],
+			["Why would you even ask that?"],
+			["You're asking the wrong question."],
+			["I think we both know that's not your real question."],
+			["Signs point to yes."], ["My sources say no."],
+			["It's complicated."], ["It's... weird."],
+			["Ha. No."], ["Hm, quite."],
+			["God, I wish."], ["In your dreams."],
+			["Maybe if you play your cards right."],
+			["Pretty likely."], ["Pretty unlikely."],
+			["Um."]
+		],
+		"types" : ["answer"],
+		"stop_progression" : false
+	}
+]

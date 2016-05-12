@@ -1,0 +1,13 @@
+	{
+		"id" : "",
+		"patterns_text" : [
+			"",
+			""
+		],
+		"responses" : [
+			[""],
+			[""]
+		],
+		"types" : [""],
+		"stop_progression" : false
+	},
