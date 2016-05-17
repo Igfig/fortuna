@@ -166,65 +166,7 @@ class Die:
 		return DieResult(self, status)
 
 
-class CustomDie(Die):
-	'''
-	a die with custom sides
-	'''
-	def __init__(self, sides):
-		self.sides = sides
-		self.size = len(sides)
-	
-	def __eq__(self, other):
-		return hasattr(other, 'sides') and self.sides == other.sides 
-	
-	def __repr__(self):
-		return "d{" + ",".join([str(s) for s in self.sides]) + "}"
-	
-	def roll(self, status=0):
-		return DieResult(random.choice(self.sides), status)
 
-
-class FateDie(Die):
-	'''
-	a Fate die, equivalent to 1d3-2
-	'''
-	def __init__(self):
-		self.size = 1 #this may be unnecessary
-	
-	def __eq__(self, other):
-		return isinstance(other, FateDie)
-	
-	def __repr__(self):
-		return "dF"
-	
-	def roll(self, status=0):
-		return DieResult(random.randint(-1, 1), status)
-
-
-class DeckDraw(Die):
-	'''
-	TODO: make this work with the existing system
-	'''
-	
-	def __init__(self, deck):
-		self.deck = deck
-	
-	def roll(self, status=0):
-		try:
-			x = random.choice(self.cards) #TODO: make compatible with DieResult
-			
-		except ValueError:
-			# no cards left in the deck
-			# so shuffle the discard back into the deck
-			# FIXME: this will occasionally result in drawing the same card
-			# twice in one multidraw
-			self.cards = self.discard
-			self.discard = []
-			x = random.choice(self.cards)
-			
-		self.cards.remove(x)
-		self.discard.append(x)
-		return x
 
 
 class DieResult(int):
@@ -304,8 +246,8 @@ class Dice(Borrower):
 		
 		if isinstance(die, Die):
 			self.die = die
-		elif die in ('F', 'f'):
-			self.die = FateDie()
+#		elif die in ('F', 'f'):
+#			self.die = FateDie()
 # 		elif die in ('draw', 'raw', 'deck', 'eck', 'card'):
 # 			self.die = CardDeck()
 # 		elif die in "BSADPCF":
@@ -350,7 +292,7 @@ class Dice(Borrower):
 	def __sub__(self, other):
 		return Roll(self) - other
 	
-	def __mult__(self, other):
+	def __mul__(self, other):
 		return Roll(self) * other
 	
 	def __truediv__(self, other):
@@ -362,7 +304,7 @@ class Dice(Borrower):
 	def __rsub__(self, other):
 		return Roll(other) - self
 	
-	def __rmult__(self, other):
+	def __rmul__(self, other):
 		return Roll(other) * self
 	
 	def __rtruediv__(self, other):
@@ -729,7 +671,7 @@ class Roll(Borrower):
 	def __add__(self, dicegroup):
 		return self.add(dicegroup)
 	
-	def __mul__(self, dicegroup):	#TODO: this doesn't seem to work right.
+	def __mul__(self, dicegroup):
 		return self.multiply(dicegroup)
 	
 	def __sub__(self, dicegroup):
@@ -1017,8 +959,10 @@ class RollResult: #TODO: add some more sequence emulation methods
 
 def run_test_cases():
 	test_cases = [
-		Dice(6),
-		Dice(6) + 5]
+		Dice(1, 6),
+		Dice(1, 6) + 5,
+		Dice(1, 6) * 3,
+		Dice(1, 6) * Dice(1, 4)]
 
 	for test_case in test_cases:
 		result = test_case.roll()
