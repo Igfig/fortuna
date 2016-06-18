@@ -1,6 +1,6 @@
 #-*- coding: utf-8 -*-
 
-'''
+"""
 Created on Jan 4, 2015
 
 @author: Ira
@@ -19,13 +19,13 @@ TODO: preface a line with $ to mark it as a spoiler; in the logs it will
         And I guess if Fortuna is sent a roll with a $, she'll return it with
         a $ as well? And print that line in white too.
         Actually it might be possible to just detect if a line is in white or not.
-'''
+"""
 
 import re
 
-#LOGS_PATH = "C:/xampp/htdocs/irasite/rpg/logs/parsedlogs/"
-LOGS_PATH = "/Applications/XAMPP/xamppfiles/htdocs/irasite/rpg/logs/parsedlogs/"
-FILENAMES = ["pwot_dnd_2016-04-24"]
+LOGS_PATH = "C:/xampp/htdocs/irasite/rpg/logs/parsedlogs/"
+#LOGS_PATH = "/Applications/XAMPP/xamppfiles/htdocs/irasite/rpg/logs/parsedlogs/"
+FILENAMES = ["pwot_dnd_2016-06-05"]
 BOTS = []
 GMS = []
 
@@ -54,7 +54,8 @@ def load_configs(filename, loadinto):
 
 def replace_ampersands(line):
 	#return re.sub("(?:^|>)[^<]*(&)(?!gt;|lt;|amp;)[^>]*(?:$|<)", "&amp;", line)				
-	return re.sub("&", "&amp;", line)
+	a = re.sub("&", "&amp;", line)
+	return a
 
 def replace_arrows(line):
 	line = line.replace('<', "&lt;")
@@ -128,15 +129,17 @@ for filename in FILENAMES:
 				#line_class = "ic"
 			
 			
-			#sanitize > and <
-			markedup_text =  replace_arrows(text)
+			
 			
 			#process text to mark up links, and maybe images and styling?
-			markedup_text = re.sub(linkpat, wrap_link, markedup_text)
+			markedup_text = re.sub(linkpat, wrap_link, text)
 			
 			#sanitize & and �
 			markedup_text = replace_ampersands(markedup_text)
 			markedup_text = replace_emdashes(markedup_text)
+			#sanitize > and <
+			markedup_text =  replace_arrows(text)
+			
 			
 			parsed_lines.append({	"speaker": speaker,
 									"speaker_class": speaker_class,

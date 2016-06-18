@@ -1,4 +1,4 @@
-'''
+"""
 Parses corrctly formatted text strings into Roll objects
 
 TODO: variables? x := 1d4, x-1
@@ -19,7 +19,7 @@ FIXME: STILL has a mysterious, hard-to-replicate problem with parens
 	also, commas
 	basically, any symbol that has a special meaning 
 TODO: maybe move comments from multirolls to single rolls? 
-'''
+"""
 
 
 import re, itertools
@@ -181,10 +181,10 @@ class DiceParser(object):
 	
 	@staticmethod
 	def parse(to_parse):
-		'''
+		"""
 		parse a full roll expression, such as 
 		"3#1d6; 2x1d20+4 vs: a, b, c; 1d4x3d6kh2, 4dx6+2d4 damage"
-		'''
+		"""
 		full_roll_strings = to_parse.split(';')
 		full_rolls = []
 		
@@ -231,11 +231,11 @@ class DiceParser(object):
 	
 	@staticmethod
 	def parse_multiroll(to_parse):
-		'''
+		"""
 		parse a multi_string expression, such as "2x 3d6 + 3, 4d10rl1 + 4"
 		
 		@return list in the form [(x_roll_result, [results, of, actual, rolls]), ...] 
-		'''
+		"""
 		multi_strings = to_parse.split(',')
 		
 		all_rolls = []
@@ -261,7 +261,7 @@ class DiceParser(object):
 	
 	@staticmethod
 	def parse_roll(to_parse):
-		'''
+		"""
 		parse a compound roll expression, such as "3d8kh1 + 2d6 + 5 damage"
 		
 		Note that arithmetic is done in left-to-right order, not BEDMAS. To
@@ -269,7 +269,7 @@ class DiceParser(object):
 		TODO: make parens actually work like this 
 		
 		@return: Roll object
-		'''
+		"""
 		
 		#handle parens
 		while '(' in to_parse:
@@ -313,21 +313,21 @@ class DiceParser(object):
 	
 	@staticmethod
 	def parse_dice(to_parse):
-		'''
+		"""
 		parse a simple dice expression, like "2d10rl1" 
 		@return Dice object 
-		'''
+		"""
 		
 		dicematch = re.match(dicepat, to_parse)
 		#dice_groups = [dicematch.group().strip()]
 		dice_groups = dicematch.groupdict()
-		'''
+		"""
 		try:
 			dice_groups = dicematch.groupdict()
 		except:
 			pass
-		'''
-		'''
+		"""
+		"""
 		#handle parens
 		
 		#for dice_group in dicematch.groups():
@@ -345,7 +345,7 @@ class DiceParser(object):
 				else:
 					#the parens weren't actually part of a dice expression 
 					raise NotADiceExpressionError(dice_group_contents)
-		'''
+		"""
 		
 		#some prelims
 		

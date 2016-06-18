@@ -1,10 +1,10 @@
-'''
+"""
 Created on Jan 23, 2016
 
 @author: Ira
-'''
+"""
 
-from dice import CustomDie
+from dice.custom import CustomDie
 from dice.str import * #@UnusedWildImport
 import random
 

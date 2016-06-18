@@ -1,4 +1,4 @@
-'''
+"""
 Parses correctly formatted text strings into Roll objects
 
 This version uses eval
@@ -18,7 +18,7 @@ TODO: any line starting with a number will be treated as a die roll.
 	well no, because that'd kill 1 + 1 = 2
 	see, the problem we're getting is 1 fart -> 1 fart = 1 
 
-FIXME: 1d4#1d4 is a crash, and it has to do with  [""] * RollResult
+FIXME: 1d4#1d4 is a crash, and it has to do with  [""] * RollResult. (also one time 1d4x1d4 did something similar)
 	basically it doesn't know how to multiply those together properly? It tries to cast the result as a list or whatever
 	And if you do 2#whatever causes a ton of lag and sometimes just doesn't happen?
 	Plus it does the {{2}} -> line before, which is really pretty unnecessary
@@ -42,7 +42,7 @@ ah the problem is in the IRC part
 FIXME: "+1d12" causes a crash
 FIXME: punctuation in comment causes AttributeError
 		that means we can't do decimals at all
-'''
+"""
 
 
 import re
@@ -226,11 +226,11 @@ class DiceParser(object):
 	
 	@staticmethod
 	def compile_roll_versions(group_versions):
-		'''
+		"""
 		FIXME: oh hmm this still isn't right. 
 		2x 1-(1d6+1) -> 1 - ({[6] + 1 = 7, [3] + 1 = 4}) = {-6, -3}
 		when really the two diceresults should end up together in a {} and the +1 should only happen once 
-		'''
+		"""
 		group_str = ""
 		
 		if len(group_versions) > 1:
@@ -245,10 +245,10 @@ class DiceParser(object):
 	
 	@staticmethod
 	def parse(to_parse):
-		'''
+		"""
 		parse a full roll expression, such as 
 		"3#1d6; 2x1d20+4 vs: a, b, c; 1d4x3d6kh2, 4dx6+2d4 damage"
-		'''
+		"""
 		
 		# deal with parens
 		# we're doing this before all the 
@@ -312,11 +312,11 @@ class DiceParser(object):
 	
 	@staticmethod
 	def parse_multiroll(to_parse, subrolls):
-		'''
+		"""
 		parse a multi_string expression, such as "2x 3d6 + 3, 4d10rl1 + 4"
 		
 		@return list in the form [(x_roll_result, [results, of, actual, rolls]), ...] 
-		'''
+		"""
 		
 		multi_strings = to_parse.split(',')
 		
@@ -343,7 +343,7 @@ class DiceParser(object):
 	
 	@staticmethod
 	def parse_roll(to_parse, subrolls):
-		'''
+		"""
 		parse a compound roll expression, such as "3d8kh1 + 2d6 + 5 damage"
 		
 		TODO: This whole function is incredibly hacky, fix it!
@@ -353,7 +353,7 @@ class DiceParser(object):
 		TODO: should always return a Roll object
 		
 		@return: Roll object		
-		'''
+		"""
 		dice = {}
 		dice_index = ord('a');
 		dice_matches = dice_or_int_pat.finditer(to_parse)
@@ -382,13 +382,13 @@ class DiceParser(object):
 	
 	@staticmethod
 	def parse_dice(to_parse):
-		'''
+		"""
 		parse a simple dice expression, like "2d10rl1" 
 		@return Dice object 
 		
 		might be superfluous
 		TODO: get rid of maybe?
-		'''
+		"""
 		
 		dicematch = re.match(dicepat, to_parse)
 		DiceParser._parse_dice_from_match(dicematch)
@@ -396,9 +396,9 @@ class DiceParser(object):
 		
 	@staticmethod
 	def _parse_dice_from_match(dice_match, existing_rolls):
-		'''
+		"""
 		FIXME: extremely hacky in spots
-		'''
+		"""
 		
 		dice_groups = dice_match.groupdict()
 		
@@ -541,6 +541,7 @@ def run_test_cases():
 		
 		# parens
 		"(1d4)d6",
+		"2d(2d3)",
 		"3 + (2 - 5)",
 		"4 * (6 - 2)",
 		"(1d6-1) + 1",

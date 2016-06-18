@@ -1,20 +1,20 @@
-'''
+"""
 Created on Jan 23, 2016
 
 @author: Ira
 
 Classes for working with dice that have strings on their faces 
 instead of ints.
-'''
+"""
 
 from dice import Borrower, Die, DieResult, Dice, DiceResult #@UnusedImport
 from collections import Counter
 
 
 class StrDieResult(str):
-	'''
+	"""
 	a die whose sides contain strings.
-	'''
+	"""
 	
 	def __new__(cls, val, status=0):
 		obj = str.__new__(cls, val)
@@ -29,12 +29,12 @@ class StrDieResult(str):
 		
 		
 class StrDice(Dice):
-	'''
+	"""
 	A roll of some number of dice with sides containing strings.
 	Dice need not be all the same die.
 	
 	@param die: the Die object to be rolled 
-	'''
+	"""
 	cancels = []
 	
 	def __init__(self, *pool):
@@ -50,9 +50,9 @@ class StrDice(Dice):
 
 
 class StrDiceResult(DiceResult):
-	'''
+	"""
 	no sort param because this should always be sorted I think
-	'''
+	"""
 	
 	def __init__(self, dice, status=0):
 		self.rolls = [die.roll() for die in dice.pool]
@@ -77,13 +77,13 @@ class StrDiceResult(DiceResult):
 
 
 class CardDeck:
-	'''
+	"""
 	a 52-card deck of playing cards.
 	Uses strings instead of numbers, so I don't know how well it'll work with 
 	all the math.
 	
 	not sure exactly how to relate it to strdice yet
-	'''
+	"""
 	def __init__(self):
 		names = range(2, 10) + ['J', 'Q', 'K', 'A']
 		suits = ['c', 'd', 'h', 's']

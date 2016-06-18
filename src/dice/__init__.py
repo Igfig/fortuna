@@ -1,4 +1,4 @@
-'''
+"""
 Created on Apr 30, 2013
 
 @author: Ira
@@ -36,13 +36,13 @@ Some notes on syntax:
 2d8 + 4 vs: bill, bob -> [1,8] + 4 vs bill; [3,7] + 4 vs bob
 
 kh, kl, rh, rl -> keep highest, keep lowest, remove highest, remove lowest
-'''
+"""
 
 #===========================================================================
 # IMPORTS
 #===========================================================================
 import random, sys, operator, traceback
-from igfig.borrower import Borrower
+from util.borrower import Borrower
 #from builtins import enumerate
 #from _ctypes_test import func
 
@@ -78,7 +78,7 @@ COMPARISON_FUNCTIONS = {'<' : operator.lt,
 
 
 def get_value_or_attr(obj, attr_name, default, *args): #really needs a better name
-	'''
+	"""
 	If obj.attr is callable, return obj.attr()
 	if it isn't callable but it does exist, return obj.attr
 	otherwise return default
@@ -88,7 +88,7 @@ def get_value_or_attr(obj, attr_name, default, *args): #really needs a better na
 	roll_if_dice().
 	
 	Use this version when debugging, it makes it a lot easier to find the problem 
-	'''
+	"""
 	if hasattr(obj, attr_name):
 		attr = getattr(obj, attr_name)
 		
@@ -99,16 +99,16 @@ def get_value_or_attr(obj, attr_name, default, *args): #really needs a better na
 		
 	else:
 		return default
-"""
+'''
 def get_value_or_attr(obj, attr_name, default, *args): #really needs a better name
-	'''
-	If obj.attr is callable, return obj.attr()
+	"""
+	if obj.attr is callable, return obj.attr()
 	if it isn't callable but it does exist, return obj.attr
 	otherwise return default 
 	
 	Use this version in play maybe, it's technically more correct? I think?
 	Although the fact that it's less debuggable seems like a problem.
-	'''
+	"""
 	
 	try:
 		return getattr(obj, attr_name)(*args)
@@ -120,17 +120,17 @@ def get_value_or_attr(obj, attr_name, default, *args): #really needs a better na
 	except AttributeError:
 		#obj.attr doesn't exist
 		return default
-"""
+'''
 	
 def roll_if_dice(to_roll, *args):
-	'''
+	"""
 	If it can be rolled, roll it; otherwise don't.
 	Not sure if there's a better place for this. 
 	Also I'm not really sure if we should be letting "roll" be an attr instead of always a method
 	because if roll is a method but we get a typeError from inside it, we'll be passed the method itself
 	when really, it should just straight-up crash
 	can we define a new exception maybe? 
-	'''
+	"""
 	return get_value_or_attr(to_roll, 'roll', to_roll, *args)
 
 
@@ -139,10 +139,10 @@ def roll_if_dice(to_roll, *args):
 #===========================================================================
 
 class Die:
-	'''
+	"""
 	a kind of die that you can roll. Subclasses for special things like FATE 
 	dice, decks of cards, etc
-	'''
+	"""
 	def __init__(self, size):
 		self.size = size
 	
@@ -159,9 +159,9 @@ class Die:
 		return repr(self)
 	
 	def roll(self, status=0):
-		'''
+		"""
 		@param status: see DieResult for an explanation
-		'''
+		"""
 		#return DieResult(random.randint(1, self.size), status)
 		return DieResult(self, status)
 
@@ -170,7 +170,7 @@ class Die:
 
 
 class DieResult(int):
-	'''
+	"""
 	The result of the roll of a single die.
 	We use this instead of a plain int because it lets us apply metadata to the roll.
 	Specifically, status: whether the die has been dropped from or added to a roll
@@ -180,7 +180,7 @@ class DieResult(int):
 	
 	TODO: may want to have some more math functions so we don't get confused if we add
 	two together
-	'''
+	"""
 
 	def __new__(cls, die, status=0):
 			
@@ -230,12 +230,12 @@ class DieResult(int):
 
 
 class Dice(Borrower):
-	'''
+	"""
 	A roll of some number of dice.
 	
 	@param num: the number of dice to roll
 	@param die: the Die object to be rolled 
-	'''
+	"""
 	
 	def __init__(self, num, die, comment=""):
 		
@@ -278,7 +278,7 @@ class Dice(Borrower):
 	
 	
 	def roll(self, sort=False, status=0):
-		'''@return list of dice rolls'''
+		"""@return list of dice rolls"""
 		return DiceResult(self, self.comment, sort, status)
 	
 	#===========================================================================
@@ -286,7 +286,7 @@ class Dice(Borrower):
 	#===========================================================================
 	
 	def __add__(self, other):
-		'''create a Roll object containing the sum of the two'''
+		"""create a Roll object containing the sum of the two"""
 		return Roll(self) + other
 	
 	def __sub__(self, other):
@@ -406,19 +406,19 @@ class DiceResult(list):
 		return self.total()
 	
 	def __iter__(self):
-		'''iterate though the dice that are still in the roll'''
+		"""iterate though the dice that are still in the roll"""
 		return iter([r for r in super().__iter__() if r.status>=0])
 	
 	def iter_all(self):
-		'''iterate through all dice attached to the roll, even ones that have been dropped'''
+		"""iterate through all dice attached to the roll, even ones that have been dropped"""
 		return super().__iter__()
 	
 	def __len__(self):
-		'''number of dice currently in the roll'''
+		"""number of dice currently in the roll"""
 		return len([_ for _ in self])
 	
 	def len_all(self):
-		'''number of dice that have ever been in the roll, even if they're now discarded'''
+		"""number of dice that have ever been in the roll, even if they're now discarded"""
 		return len(list(self.iter_all()))
 	
 	def __repr__(self):
@@ -466,7 +466,7 @@ class DiceResult(list):
 	#===========================================================================
 	
 	def explode(self, maxdepth=-1, trigger=None):
-		'''@param trigger: the function that determines whether a die will explode.'''
+		"""@param trigger: the function that determines whether a die will explode."""
 
 		if not trigger:
 			trigger = lambda d: d >= self.die.size #by default, explodes on maximum result
@@ -514,9 +514,9 @@ class DiceResult(list):
 	#===========================================================================
 	
 	def set_total_to_count(self, func, *args):
-		'''
+		"""
 		Make the total() function work by counting the number of dice that meet some criteria 
-		'''
+		"""
 		def count_x():
 			return self.count_filtered(func, *args)
 		
@@ -525,9 +525,9 @@ class DiceResult(list):
 	
 	
 	def set_total_to_sum(self):
-		'''
+		"""
 		Make the total() function work by summing all the dice rolled
-		'''
+		"""
 		self.total_func = self.sum
 		return self
 	
@@ -555,39 +555,39 @@ class DiceResult(list):
 		return self.mode()
 	
 	def largest_match(self):
-		'''how many times the mode appears'''
+		"""how many times the mode appears"""
 		return self.count(self.mode())
 	
 	
 	def filter(self, func, *args): #@ReservedAssignment
-		'''@rtype: list'''
+		"""@rtype: list"""
 		return [r for r in self if r.status >= 0 and func(r, *args)]
 	
 	def filterfalse(self, func, *args):
-		'''@rtype: list'''
+		"""@rtype: list"""
 		return [r for r in self if r.status >= 0 and not func(r, *args)]
 
 
 	def filter_mostest(self, n, func=lambda x: x, *args):
-		'''
+		"""
 		Returns a ranking of the elements in order of how well they maximize the return value of a function.
 		@param n: extract the best n items. If n is negative, instead extract the worst -n items. 
 		@rtype: list
-		'''
+		"""
 		sorted_by_mostest = self.index_mostest(n, func, *args)
 		
 		return [self[i] for i in range(self.len_all()) if i in sorted_by_mostest]
 	
 	
 	def index_mostest(self, n, func=lambda x: x, *args):
-		'''
+		"""
 		Creates a ranking of indexes of elements by which element gets the best values from a function.
 		Returns the indices, not the elements themselves.
 		@param n: we'll return the best/worst n items  
 		@param func: the function we want to maximize
 		@param args: any additional arguments we might want to pass the function. Will be the same for each call.
 		@rtype: list
-		'''
+		"""
 		
 		mostnesses = [(i, func(self[i], *args)) for i in range(self.len_all()) if self[i].status >= 0]
 		sorted_by_mostest = sorted(mostnesses, key=operator.itemgetter(1))
@@ -626,9 +626,9 @@ class DiceResult(list):
 
 
 class DiceInt(int):
-	'''
+	"""
 	An int that you can use like a Dice or DiceResult object.
-	'''
+	"""
 	
 	def __new__(cls, val, comment=""):
 		obj = int.__new__(cls, val)
@@ -646,9 +646,9 @@ class DiceInt(int):
 
 
 class Roll(Borrower):
-	'''
+	"""
 	@param initial: the initial Dice that is the starting point for all further manipulations 
-	'''
+	"""
 	
 	def __new__(cls, initial):
 		if isinstance(initial, Roll):
@@ -756,7 +756,7 @@ class RollResult: #TODO: add some more sequence emulation methods
 	#===========================================================================
 	
 	def __getitem__(self, key):
-		'''just returns the sublist, not a RollResult object''' 
+		"""just returns the sublist, not a RollResult object""" 
 		return self.result[key]
 	
 	
@@ -765,15 +765,15 @@ class RollResult: #TODO: add some more sequence emulation methods
 	
 	
 	def __iter__(self):
-		'''
+		"""
 		this is actually pretty bad, don't use it
 		it's only here so that RollResult will be recognized as an iterable
-		'''
+		"""
 		return iter(self.result) 
 	
 	
 	def __len__(self):
-		'''total number of dice rolled'''
+		"""total number of dice rolled"""
 		len_total = 0
 		for r in self.result:
 			try:
@@ -829,7 +829,7 @@ class RollResult: #TODO: add some more sequence emulation methods
 		pass
 	
 	def drop_highest(self, n=1): #this could be more efficient
-		'''find the highest die remaining in the roll and drop it, n times'''
+		"""find the highest die remaining in the roll and drop it, n times"""
 		#TODO: unify with drop_lowest()
 		for _ in range(n):
 			highest = -sys.maxsize
@@ -867,12 +867,12 @@ class RollResult: #TODO: add some more sequence emulation methods
 	def keep(self, func, n=1):
 		#TODO: 
 		pass
-	'''
+	"""
 	def keep(self, func):
 		#self.result[-1] = self.result[-1].keep(func) #maybe?
 		self.result[-1] = self.filter(func)
 		return self
-	'''
+	"""
 	
 	def keep_highest(self, n=1):
 		#TODO:
@@ -898,15 +898,15 @@ class RollResult: #TODO: add some more sequence emulation methods
 	#===========================================================================
 	
 	def filter(self, func, *args): #@ReservedAssignment
-		'''@rtype: list'''
+		"""@rtype: list"""
 		return [r for r in self if func(r, *args)]
 	
 	def find_mostest(self, attr, key, n=1):
-		'''
+		"""
 		find which subrolls best match a criterion. Needs a better name.
 		@param attr: the thing we're comparing
 		@param key: function, how we're judging how good the thing is. Higher number is always better.
-		'''
+		"""
 		bests = [] #list of tuples: (keyvalue, holder). 
 		#TODO: make this a proper sorted container, maybe using SortedContainers
 		
@@ -932,11 +932,11 @@ class RollResult: #TODO: add some more sequence emulation methods
 		return [key for (key, _) in self.find_mostest("lowest", lambda x: -x, n)]
 	
 	def total(self):
-		'''
+		"""
 		total sum value of roll
 		works in left-to-right order, so if you want something calculated first, put it in a subroll
 		TODO: make conform to BEDMAS
-		'''
+		"""
 		subtotal = 0;
 		
 		try:

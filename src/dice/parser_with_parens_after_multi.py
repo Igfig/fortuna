@@ -1,4 +1,4 @@
-'''
+"""
 Parses correctly formatted text strings into Roll objects
 
 This version uses eval
@@ -15,7 +15,7 @@ FIXME: STILL has a mysterious, hard-to-replicate problem with parens
 	also, commas
 	basically, any symbol that has a special meaning 
 TODO: permit commas in distrib? Would have us start again on a new set of lines I guess.
-'''
+"""
 
 
 import re
@@ -184,10 +184,10 @@ class DiceParser(object):
 	
 	@staticmethod
 	def parse(to_parse):
-		'''
+		"""
 		parse a full roll expression, such as 
 		"3#1d6; 2x1d20+4 vs: a, b, c; 1d4x3d6kh2, 4dx6+2d4 damage"
-		'''
+		"""
 		full_roll_strings = to_parse.split(';')
 		full_rolls = []
 		
@@ -227,11 +227,11 @@ class DiceParser(object):
 	
 	@staticmethod
 	def parse_multiroll(to_parse):
-		'''
+		"""
 		parse a multi_string expression, such as "2x 3d6 + 3, 4d10rl1 + 4"
 		
 		@return list in the form [(x_roll_result, [results, of, actual, rolls]), ...] 
-		'''
+		"""
 		
 		multi_strings = to_parse.split(',')
 		
@@ -258,13 +258,13 @@ class DiceParser(object):
 	
 	@staticmethod
 	def parse_roll(to_parse):
-		'''
+		"""
 		parse a compound roll expression, such as "3d8kh1 + 2d6 + 5 damage"
 		
 		TODO: This whole function is incredibly hacky, fix it!
 		
 		@return: Roll object
-		'''
+		"""
 		
 		subrolls = {} #using this as a sort of weird hashtable
 		subroll_index = 0;
@@ -286,12 +286,12 @@ class DiceParser(object):
 	
 	@staticmethod
 	def _parse_roll_without_parens(to_parse, subrolls):
-		'''
+		"""
 		
 		
 		this is really hacky with the indexing. Maybe we should move the indexing functions to a new method, 
 		at least?
-		'''
+		"""
 		dice = {}
 		dice_index = ord('a');
 		dice_matches = dicepat.finditer(to_parse)
@@ -312,12 +312,12 @@ class DiceParser(object):
 	
 	@staticmethod
 	def parse_dice(to_parse):
-		'''
+		"""
 		parse a simple dice expression, like "2d10rl1" 
 		@return Dice object 
 		
 		might be superfluous
-		'''
+		"""
 		
 		dicematch = re.match(dicepat, to_parse)
 		DiceParser._parse_dice_from_match(dicematch)
@@ -325,9 +325,9 @@ class DiceParser(object):
 		
 	@staticmethod
 	def _parse_dice_from_match(dice_match, existing_rolls):
-		'''
+		"""
 		FIXME: extremely hacky in spots
-		'''
+		"""
 		
 		dice_groups = dice_match.groupdict()
 		
@@ -430,7 +430,7 @@ class DiceParser(object):
 			
 		return dice
 	
-	'''
+	"""
 	@staticmethod
 	def _parse_dice_from_match(dice_match):
 		dice_groups = dice_match.groupdict()
@@ -518,7 +518,7 @@ class DiceParser(object):
 			dice.sort()
 			
 		return dice
-	'''
+	"""
 	
 		
 

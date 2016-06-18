@@ -1,11 +1,11 @@
-'''
+"""
 Created on Jan 24, 2016
 
 @author: Ira
 
 this is still suuuper sketchy
 TODO: d100s as well
-'''
+"""
 
 from dice.parser import *	#@UnusedWildImport
 from dice.starwars import BoostDie, SetbackDie, AbilityDie, DifficultyDie, ProficiencyDie, ChallengeDie, ForceDie, StarWarsDice

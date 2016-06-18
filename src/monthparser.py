@@ -1,6 +1,6 @@
 #-*- coding: utf-8 -*-
 
-'''
+"""
 Created on Jan 4, 2015
 
 @author: Ira
@@ -19,7 +19,7 @@ TODO: preface a line with $ to mark it as a spoiler; in the logs it will
         And I guess if Fortuna is sent a roll with a $, she'll return it with
         a $ as well? And print that line in white too.
         Actually it might be possible to just detect if a line is in white or not.
-'''
+"""
 
 import re, os
 
