@@ -12,6 +12,8 @@ intuitive UI.
 
 TODO: permit regex in the parser configs, so we can, say, automatically 
 	mark anyone with "DM" in their name as a DM
+	did we do this?
+	Partially. If your name starts or ends with DM you're a DM. Didn't use regex for that.
 
 TODO: preface a line with $ to mark it as a spoiler; in the logs it will
         be made illegible (blurred out, maybe) unless the Show Spoilers box
@@ -25,7 +27,7 @@ import re
 
 LOGS_PATH = "C:/xampp/htdocs/irasite/rpg/logs/parsedlogs/"
 #LOGS_PATH = "/Applications/XAMPP/xamppfiles/htdocs/irasite/rpg/logs/parsedlogs/"
-FILENAMES = ["pwot_dnd_2016-06-05"]
+FILENAMES = ["pwot_dnd_2016-06-19"]
 BOTS = []
 GMS = []
 

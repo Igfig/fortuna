@@ -223,10 +223,10 @@ class DieResult(int):
 		return self.__add__(other)
 	
 	def __mul__(self, other):
-		return DieResult(super().__mul__(other), status=0)
-	
-	def __rmul__(self, other):
-		return self.__mul__(other)
+		if isinstance(other, (int, Die, Dice, Roll)): #FIXME: isinstance is a little dirty, is there a better way?
+			return DieResult(super().__mul__(other), status=0)
+		else:
+			return int(self) * other
 
 
 class Dice(Borrower):

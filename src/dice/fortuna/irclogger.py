@@ -2,6 +2,10 @@
 Created on Jul 1, 2015
 
 @author: Ira
+
+TODO: someday maybe have it get logged with all the html styling.
+Like, instead of writing directly to a file, pipe it to logparser.
+(which needs a better name)
 """
 
 import datetime, traceback
@@ -34,9 +38,12 @@ class Logger(object):
 				traceback.print_tb(err.__traceback__)
 	
 	def recall(self, context, num_lines=1):
+		#TODO: maybe change the default so that it just tries to repeat everything since you logged out?
+		#TODO: be able to request the history from a different convo, so you can ask in PMs 
 		with open(self.get_logpath(context), 'r') as logfile:
 			return [line.strip() for line in 
-				logfile.readlines()[-num_lines:]]
+				logfile.readlines()[-num_lines-1:-1]] 
+			#the -1s are so we don't recall the RECALL command 
 	
 	def start(self):
 		while True:

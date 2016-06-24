@@ -298,7 +298,7 @@ class DiceParser(object):
 				# ie. 2d6 vs: bill, bob, george
 				distribs = full_roll_match.group('distrib').split(",") * int(repetitions)
 			else:
-				distribs = [""] * int(repetitions) #FIXME: this fucks up hard on 1d4#1d4
+				distribs = [""] * int(repetitions)
 			
 			#FIXME: we don't actually do the repetitions
 			
@@ -354,6 +354,16 @@ class DiceParser(object):
 		
 		@return: Roll object		
 		"""
+		
+		'''
+		q = re.sub(dice_or_int_pat, 'DiceParser.parse_dice("' + '\g<0>' + '")', to_parse)
+		
+		print(q)
+		print(eval(q))
+		return None
+		
+		
+		'''
 		dice = {}
 		dice_index = ord('a');
 		dice_matches = dice_or_int_pat.finditer(to_parse)
@@ -378,7 +388,7 @@ class DiceParser(object):
 		except SyntaxError:
 			#included parseable content but was probably not intended to be parsed
 			raise NotADiceExpressionError(to_parse)
-	
+		
 	
 	@staticmethod
 	def parse_dice(to_parse):
@@ -391,7 +401,10 @@ class DiceParser(object):
 		"""
 		
 		dicematch = re.match(dicepat, to_parse)
-		DiceParser._parse_dice_from_match(dicematch)
+		return DiceParser._parse_dice_from_match(dicematch, {})#.roll()
+		
+		# TODO: need to make it so a Dice expression can take another dice-type object as an argument, in place of an int.
+		# except I think we can do that to some degree already, at least? 
 		
 		
 	@staticmethod
@@ -534,6 +547,7 @@ def run_test_cases():
 		
 		# comments
 		"2d6 + 5 slashing + 1d8 radiant + 2d6 sneak attack",
+		"1d4 horses.",	#FIXME: RETURNS NULL
 		
 		# bedmas
 		"1 + 2 * 3",
@@ -548,8 +562,21 @@ def run_test_cases():
 		"6 - (4 + (1d4*2) - 3)",
 		
 		# multirolls
+		"2x 3d4",
+		"1d4 x 2d6",
+		"2d3 x 2d6",
+		"(2d3)d2 x 1d8",
+		"1d4, 1d6, 1d8",
+		"1d3 x 3d6, 1d10",
+		"1, 2d2, 1d3 x 2d6", #FIXME: bad placement of {{}}
+		"2d2 x 1d4 x 2d8", #FIXME maybe? do we want to allow multiple xs?
 		
 		# multi-line rolls
+		"2 # 2d6",
+		"1d4 # 3d4",
+		"2d2 # 2d8",
+		"1d3 # 1d4 x 1d6", #FIXME maybe we should reroll the 1d4 here each time?
+		"1d2, 1d3 # 2d8", #FIXME this doesn't work... but how would that work anyway?
 		
 		# distribs
 		"1d10 hats, 2d4 socks for alice",
@@ -560,6 +587,7 @@ def run_test_cases():
 		"foo",
 		"foo; bar",
 		"(foo, bar)",
+		"('foo')",	#FIXME: returns when it shouldn't
 		"foo bar",
 		"foo bar?",
 		"foo bar foo, bar foobar.",
@@ -584,7 +612,7 @@ if __name__ == "__main__":
 	
 	#s = "2x(1d4+1)d(1d8) + 1"
 	#s = "(1d4, 2d6)d3"
-	s = "1 fart"
+	s = "1d6 fart"
 	#s = "1 + (1d6-1)"
 	#s = "2d2 x 1d4 - (1d6 + 1)"
 	#s = "2x 1 - (1d6+1)"
