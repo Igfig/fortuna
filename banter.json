@@ -73,6 +73,19 @@
 		"stop_progression" : false
 	},
 	
+	{	
+		"id" : "high5",
+		"patterns_text" : [
+			"\\b<name>\\b",
+			"(?:\\^|hi|high)\\s*(?:5|five)"
+		],
+		"responses" : [
+			["^5"]
+		],
+		"types" : ["props"],
+		"stop_progression" : false
+	},
+	
 	{
 		"id" : "thanks",
 		"patterns_text" : [
