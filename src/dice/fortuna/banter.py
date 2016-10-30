@@ -10,7 +10,6 @@ TODO: (maybe?) recognize whether her name was said in the speaker's previous
 	so if someone says "Fortuna" and then "Fuck you." she'll recognize it.  
 TODO: something for "fortuna plz"
 TODO: make the question pattern more versatile
-TODO: high five and ^5 response 
 """
 import json, random, re
 
@@ -26,6 +25,7 @@ class BanterController(object):
 	"""
 
 	def __init__(self, json_path, name="Fortuna"):
+		
 		with open(json_path) as jfile: 
 			self.exchanges = [BanterExchange(name, obj) for obj in json.load(jfile)]
 	
@@ -60,7 +60,8 @@ class BanterController(object):
 
 class BanterExchange(object):
 	"""
-	A stimulus/response pair describing how Fortuna responds to specified chat phrases.
+	A stimulus/response pair describing how Fortuna responds to specified chat 
+	phrases.
 	
 	Instance properties that'll get added out of the json:
 	id: a string to identify the triggering phrase
@@ -70,9 +71,10 @@ class BanterExchange(object):
 		or something, but it'll be for testing the line's metadata, eg the
 		speaker. Maybe also things that are only happening in the code, like
 		checking the insult_level or something like that
-		might unify this with patterns_text in some way, since text and data aren't passed
-		separately any more.
-	responses: a list of sequences of lines Fortuna might say in response to a matching line
+		might unify this with patterns_text in some way, since text and data aren't 
+		passed separately any more.
+	responses: a list of sequences of lines Fortuna might say in response to a 
+	matching line
 	types: a list of strings; no more than one exchange of each type will be matched.
 	stop_progression: if this is true, no more exchanges will be matched after this.
 	"""
@@ -82,8 +84,9 @@ class BanterExchange(object):
 		# import all the json
 		self.__dict__ = exchange_dict
 		
-		#compile all the regex patterns, to improve long-term performance.
-		#also replace all "<name>" in patterns with the bot's actual name (usually Fortuna) 
+		# compile all the regex patterns, to improve long-term performance.
+		# also replace all "<name>" in patterns with the bot's actual name 
+		# (usually Fortuna) 
 		compiled_patterns = [re.compile(pattern.replace("<name>", name), re.I) 
 								for pattern in self.patterns_text]
 		self.patterns_text = compiled_patterns

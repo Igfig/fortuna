@@ -42,7 +42,7 @@ def divide_line(line):
 	
 	return (speaker, text)
 
-def load_configs(filename, loadinto):
+def get_configs(filename, loadinto):
 	with open("../parserconfigs/" + filename, 'r') as infile:
 		for line in infile:
 			if line:
@@ -70,8 +70,8 @@ def wrap_link(linkmatch):
 		
 
 
-load_configs("bots.txt", BOTS)
-load_configs("gms.txt", GMS)
+loget_configsbots.txt", BOTS)
+loget_configsgms.txt", GMS)
 
 
 

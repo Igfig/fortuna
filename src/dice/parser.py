@@ -46,8 +46,8 @@ FIXME: punctuation in comment causes AttributeError
 
 
 import re
-from dice import Die, Dice, DiceResult, DiceInt, Roll, RollResult, OPERATOR_FUNCTIONS, COMPARISON_FUNCTIONS,\
-	roll_if_dice
+from dice.rollable import Dice, DiceResult, DiceInt, Roll, RollResult, \
+		OPERATOR_FUNCTIONS, COMPARISON_FUNCTIONS, roll_if_dice
 
 #===========================================================================
 # REGEX PATTERNS

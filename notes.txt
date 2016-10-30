@@ -1,2 +1,5 @@
 parens issue still happening
 periods still a problem
+can't handle negative numbers yet
+talk shit get hit
+add a way to un-IC a line

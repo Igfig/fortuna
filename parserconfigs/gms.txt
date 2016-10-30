@@ -1,4 +1,6 @@
-Igfig
-Slim_Bankshot
-DMelf
+^(dm|gm)
+(dm|gm)$
+igfig
+slim_bankshot
 handofevil
+peter

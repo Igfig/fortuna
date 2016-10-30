@@ -7,16 +7,18 @@ Classes for working with dice that have strings on their faces
 instead of ints.
 """
 
-from dice import Borrower, Die, DieResult, Dice, DiceResult #@UnusedImport
+import random
+from dice.rollable import Borrower, Dice, DiceResult 
 from collections import Counter
 
 
 class StrDieResult(str):
 	"""
-	a die whose sides contain strings.
+	Result of a roll of a die whose sides contain strings.
 	"""
 	
-	def __new__(cls, val, status=0):
+	def __new__(cls, die, status=0):
+		val = random.choice(die.sides)
 		obj = str.__new__(cls, val)
 		obj.status = status
 		return obj

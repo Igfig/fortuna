@@ -16,15 +16,14 @@ TODO: preface a line with $ to mark it as a spoiler; in the logs it will
         And I guess if Fortuna is sent a roll with a $, she'll return it with
         a $ as well? And print that line in white too.
         Actually it might be possible to just detect if a line is in white or not.
+TODO merge config into one file
+TODO add config options for the patterns for IC, OOC, spoilers I guess
 """
 
-import re
+import re, os, tkinter.filedialog
 
 LOGS_PATH = "C:/xampp/htdocs/irasite/rpg/logs/parsedlogs/"
 #LOGS_PATH = "/Applications/XAMPP/xamppfiles/htdocs/irasite/rpg/logs/parsedlogs/"
-FILENAMES = ["pwot_dnd_2016-08-28"]
-BOTS = []
-GMS = []
 
 linepat = re.compile("(^[^:]*:)(.*)")
 linkpat = re.compile("http(?:s)?://\S*")
@@ -42,116 +41,147 @@ def divide_line(line):
 	
 	return (speaker, text)
 
-def load_configs(filename, loadinto):
-	with open("../parserconfigs/" + filename, 'r') as infile:
-		for line in infile:
-			if line:
-				loadinto.append(line.strip().lower())
 
+def get_basename(filename):
+	pathless_name = os.path.basename(filename)
+	basename, _, _ = pathless_name.rpartition(".")
+	#Because of some quirks of rpartition, basename will be empty if no . is found.
+	
+	if basename:
+		return basename
+	else:
+		return pathless_name
 
-def replace_ampersands(line):
-	#return re.sub("(?:^|>)[^<]*(&)(?!gt;|lt;|amp;)[^>]*(?:$|<)", "&amp;", line)				
-	a = re.sub("&", "&amp;", line)
-	return a
-
-def replace_arrows(line):
-	line = line.replace('<', "&lt;")
-	line = line.replace('>', "&gt;")
-	return line
-
-def replace_emdashes(line):
-	return re.sub('—', "&mdash;", line)
 
 def update_configs(filename, newline):
 	with open("../parserconfigs/" + filename, 'a') as outfile:
 		outfile.write("\n" + newline)
 
+
 def wrap_link(linkmatch):
-	return "<a href='" + linkmatch.group(0) +"' target='_blank'>" + linkmatch.group(0) + "</a>"
+	return "<a href='" + linkmatch.group(0) + "' target='_blank'>" \
+			+ linkmatch.group(0) + "</a>"
+
+
+class LogParser():
+	def __init__(self):
+		self.bots = self.get_configs("bots.txt")
+		gms = self.get_configs("gms.txt")
+		self.gm_pat = re.compile("|".join(gms))
+		self.parsed_lines = []
 		
-
-
-load_configs("bots.txt", BOTS)
-load_configs("gms.txt", GMS)
-
-parsed_lines = []
-
-
-
-for filename in FILENAMES:
-	with open("../logs/" + filename + ".txt", 'r') as infile:
-					
-		for line in infile:
-			speaker, text = divide_line(line)
-			speaker = speaker.lower()
-			
-			if speaker == "server":
-				speaker_class = "server "
-			elif speaker in BOTS:
-				speaker_class = "bot "
-			elif speaker in GMS or speaker.startswith(("dm", "gm")) or speaker.endswith(("dm", "gm")):
-				speaker_class = "gm "
-			else:
-				speaker_class = ""
-			
-			retmatch = re.match(retpat, text)
-			
-			if retmatch: #mark a line as actually IC
-				lines_to_go_back = len(retmatch.group(1))
-				
-				if retmatch.group(2):
-					lines_to_go_back += min(int(retmatch.group(2)) - 1, 0)
-				
-				for line in reversed(parsed_lines):
-					if line["speaker"] == speaker:
-						lines_to_go_back -= 1;
-					
-						if not lines_to_go_back:
-							line["line_class"] = "ic"
-							break
+	def parse_logs(self, *filenames):
+		self.parsed_lines = []
+		
+		for filename in filenames:
+			with open(filename, 'r') as infile:
 							
-				continue
-			
-			elif text[0] in ("`", "'"):
-				line_class = "ic" #the space is for joining to the other classes
-				text = text[1:].strip()
-			elif text[0] == '"':
-				line_class = "ic"
-			elif speaker == "server":
-				line_class = "ic"
-			elif speaker.lower() in BOTS or re.search(dicepat, text):
-				line_class = "ic"
-			else:
-				line_class = "ooc"
-				#line_class = "ic"
-			
-			
-			
-			
-			#process text to mark up links, and maybe images and styling?
-			markedup_text = re.sub(linkpat, wrap_link, text)
-			
-			#sanitize & and �
-			markedup_text = replace_ampersands(markedup_text)
-			markedup_text = replace_emdashes(markedup_text)
-			#sanitize > and <
-			markedup_text =  replace_arrows(text)
-			
-			
-			parsed_lines.append({	"speaker": speaker,
-									"speaker_class": speaker_class,
-									"line_class": line_class,
-									"markedup_text": markedup_text })
-				
-				
-				
-with open(LOGS_PATH + FILENAMES[0] + ".html", 'w') as outfile:
-	for line in parsed_lines:		
-		outfile.write("\t<blockquote class='" + line["speaker_class"] + line["line_class"] + "'><cite>" + 
-						line["speaker"] + ":</cite><p>" + line["markedup_text"] + "</p></blockquote>\n")
-				
-				
+				for line in infile:
+					speaker, text = divide_line(line)
+					speaker = speaker.lower()
+					speaker_class = self.get_speaker_class(speaker)
+					retmatch = re.match(retpat, text)
+					
+					if retmatch: #mark a line as actually IC
+						lines_to_go_back = len(retmatch.group(1))
+						
+						if retmatch.group(2):
+							lines_to_go_back += min(int(retmatch.group(2)) - 1, 0)
+						
+						for line in reversed(self.parsed_lines):
+							if line["speaker"] == speaker:
+								lines_to_go_back -= 1;
+							
+								if not lines_to_go_back:
+									line["line_class"] = "ic"
+									break
+									
+						continue
+					
+					elif text[0] in ("`", "'"):
+						line_class = "ic" #the space is for joining to the other classes
+						text = text[1:].strip()
+					elif text[0] == '"':
+						line_class = "ic"
+					elif speaker == "server":
+						line_class = "ic"
+					elif speaker.lower() in self.bots or re.search(dicepat, text):
+						line_class = "ic"
+					else:
+						line_class = "ooc"
+					
+					markedup_text = self.sanitize_text(text)
+					
+					self.parsed_lines.append({ 	  "speaker": speaker,
+											"speaker_class": speaker_class,
+											   "line_class": line_class,
+											"markedup_text": markedup_text })
+		return self.parsed_lines
+	
+	def write_lines(self, out):
+		with open(out, "w") as outfile:
+			for line in self.parsed_lines:		
+				outfile.write("\t<blockquote class='" + line["speaker_class"] 
+						+ line["line_class"] + "'><cite>" + line["speaker"] 
+						+ ":</cite><p>" + line["markedup_text"] 
+						+ "</p></blockquote>\n")
+	
+	def get_configs(self, filename):
+		loadinto = []
+		
+		with open("../parserconfigs/" + filename, 'r') as infile:
+			for line in infile:
+				if line:
+					loadinto.append(line.strip().lower())
+		
+		return loadinto
+
+	def get_speaker_class(self, speaker):
+		if speaker == "server":
+			speaker_class = "server "
+		elif speaker in self.bots:
+			speaker_class = "bot "
+		elif self.gm_pat.search(speaker):
+			speaker_class = "gm "
+		else:
+			speaker_class = ""
+		
+		return speaker_class
+	
+	def sanitize_text(self, text):
+		"""
+		process text to mark up links, and maybe images and styling?
+		Also converts symbols to entity strings.
+		
+		TODO might be able to do some of this with string.translate
+		"""
+		markedup_text = re.sub(linkpat, wrap_link, text)
+		markedup_text = re.sub("&", "&amp;", markedup_text)
+		markedup_text = re.sub('—', "&mdash;", markedup_text)
+		markedup_text = markedup_text.replace('<', "&lt;")
+		markedup_text = markedup_text.replace('>', "&gt;")
+
+		return markedup_text
 
 
-print(len(parsed_lines), "lines parsed")
+def main():
+	tkinter.Tk().withdraw()
+	
+	filenames = tkinter.filedialog.askopenfilenames()
+	basenames = [get_basename(f) for f in filenames]
+	
+	logparser = LogParser()
+	logparser.parse_logs(*filenames)
+	
+	try:
+		out = LOGS_PATH + basenames[0] + ".html"
+	except IndexError:
+		return
+	
+	logparser.write_lines(out)
+	
+	print(len(logparser.parsed_lines), "lines parsed")
 
+
+if __name__ == "__main__":
+	main()

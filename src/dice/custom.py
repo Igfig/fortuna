@@ -43,6 +43,7 @@ class FateDie(Die):
 class DeckDraw(Die):
     """
     TODO: make this work with the existing system
+    might be replaced by str.CardDeck now
     """
     
     def __init__(self, deck):

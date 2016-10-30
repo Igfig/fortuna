@@ -8,7 +8,8 @@ TODO: d100s as well
 """
 
 from dice.parser import *	#@UnusedWildImport
-from dice.starwars import BoostDie, SetbackDie, AbilityDie, DifficultyDie, ProficiencyDie, ChallengeDie, ForceDie, StarWarsDice
+from dice.starwars.rollable import BoostDie, SetbackDie, AbilityDie, \
+		DifficultyDie, ProficiencyDie, ChallengeDie, ForceDie, StarWarsDice
 
 
 rollstr = "ROLL\s+([BSADPCF]+)(.*)" 
