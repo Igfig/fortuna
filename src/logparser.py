@@ -20,10 +20,9 @@ TODO merge config into one file
 TODO add config options for the patterns for IC, OOC, spoilers I guess
 """
 
-import re, os, tkinter.filedialog
+import re, os, configparser, tkinter.filedialog
 
-LOGS_PATH = "C:/xampp/htdocs/irasite/rpg/logs/parsedlogs/"
-#LOGS_PATH = "/Applications/XAMPP/xamppfiles/htdocs/irasite/rpg/logs/parsedlogs/"
+CONFIG_PATH = "../logparser.ini"
 
 linepat = re.compile("(^[^:]*:)(.*)")
 linkpat = re.compile("http(?:s)?://\S*")
@@ -59,15 +58,22 @@ def update_configs(filename, newline):
 
 
 def wrap_link(linkmatch):
+	"""
+	TODO special cases for linked images, videos, and possibly music.
+		Ideally: download images, and put all of them inline if possible.
+		Possibly just as thumbnails.
+	"""
 	return "<a href='" + linkmatch.group(0) + "' target='_blank'>" \
 			+ linkmatch.group(0) + "</a>"
 
+def normalize_name(s):
+	return '^' + s.lower() + '$'
 
 class LogParser():
-	def __init__(self):
-		self.bots = self.get_configs("bots.txt")
-		gms = self.get_configs("gms.txt")
-		self.gm_pat = re.compile("|".join(gms))
+	def __init__(self, config):
+		self.bot_pattern = self._get_bot_pattern(config)
+		self.gm_pattern = self._get_gm_pattern(config)
+		
 		self.parsed_lines = []
 		
 	def parse_logs(self, *filenames):
@@ -105,7 +111,7 @@ class LogParser():
 						line_class = "ic"
 					elif speaker == "server":
 						line_class = "ic"
-					elif speaker.lower() in self.bots or re.search(dicepat, text):
+					elif self.bot_pattern.search(speaker) or re.search(dicepat, text):
 						line_class = "ic"
 					else:
 						line_class = "ooc"
@@ -126,6 +132,16 @@ class LogParser():
 						+ ":</cite><p>" + line["markedup_text"] 
 						+ "</p></blockquote>\n")
 	
+	def _get_bot_pattern(self, config):
+		bot_names = [normalize_name(bot_name) for bot_name in config["BOTS"]]
+		return re.compile("|".join(bot_names))
+	
+	def _get_gm_pattern(self, config):
+		base_pattern = "^(dm|gm)|(dm|gm)$"
+		gm_names = [base_pattern] + \
+				[normalize_name(gm_name) for gm_name in config["GMS"]]
+		return re.compile("|".join(gm_names))
+	
 	def get_configs(self, filename):
 		loadinto = []
 		
@@ -139,9 +155,9 @@ class LogParser():
 	def get_speaker_class(self, speaker):
 		if speaker == "server":
 			speaker_class = "server "
-		elif speaker in self.bots:
+		elif self.bot_pattern.search(speaker):
 			speaker_class = "bot "
-		elif self.gm_pat.search(speaker):
+		elif self.gm_pattern.search(speaker):
 			speaker_class = "gm "
 		else:
 			speaker_class = ""
@@ -154,13 +170,15 @@ class LogParser():
 		Also converts symbols to entity strings.
 		
 		TODO might be able to do some of this with string.translate
+		FIXME links with "&" in them will get messed up
+		...actually maybe they don't, these look fine.
 		"""
-		markedup_text = re.sub(linkpat, wrap_link, text)
-		markedup_text = re.sub("&", "&amp;", markedup_text)
+		markedup_text = re.sub("&", "&amp;", text)
 		markedup_text = re.sub('—', "&mdash;", markedup_text)
 		markedup_text = markedup_text.replace('<', "&lt;")
 		markedup_text = markedup_text.replace('>', "&gt;")
-
+		markedup_text = re.sub(linkpat, wrap_link, markedup_text)
+		
 		return markedup_text
 
 
@@ -170,11 +188,18 @@ def main():
 	filenames = tkinter.filedialog.askopenfilenames()
 	basenames = [get_basename(f) for f in filenames]
 	
-	logparser = LogParser()
+	config = configparser.ConfigParser(allow_no_value=True)
+	config.read(CONFIG_PATH)
+	
+	logparser = LogParser(config)
 	logparser.parse_logs(*filenames)
 	
+	save_path = config["MISC"]["save path"]
+	if not save_path.endswith('/'):
+		save_path += '/'
+	
 	try:
-		out = LOGS_PATH + basenames[0] + ".html"
+		out = save_path + basenames[0] + ".html"
 	except IndexError:
 		return
 	

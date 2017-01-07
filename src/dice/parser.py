@@ -23,7 +23,11 @@ FIXME: 1d4#1d4 is a crash, and it has to do with  [""] * RollResult. (also one t
 	And if you do 2#whatever causes a ton of lag and sometimes just doesn't happen?
 	Plus it does the {{2}} -> line before, which is really pretty unnecessary
 
-TODO: check what intended behaviour is for #. Separate lines or same line?
+TODO: check what intended behaviour is for #. Separate lines or same line? Separate.
+
+FIXME: using # makes all the right-side results the same.
+	This is actually a fairly deep issue. We need to move the actual rolling of the 
+	dice much later, into make_output_lines I suppose
 	
 FIXME:
 	parens are messy
@@ -53,7 +57,7 @@ from dice.rollable import Dice, DiceResult, DiceInt, Roll, RollResult, \
 # REGEX PATTERNS
 #===========================================================================
 
-operators = "+\*-/^%"
+operators = "+\*\-/^%"
 comparators = "<|<=|!=|>=|>"
 signifiers = ",;:{}\(\)"
 bracestr = "{([\w[\]]*)}"
@@ -99,6 +103,7 @@ class DiceParser(object):
 		
 		try:
 			self.result = self.parse(to_parse.strip())
+			pass
 			
 		except NotADiceExpressionError:
 			#was not an expression at all
@@ -129,8 +134,16 @@ class DiceParser(object):
 		output_lines = []
 		
 		for res in self.result:
-			if int(res['repetitions']) > 1:
-				output_lines.append("{{" + str(res['repetitions']) + "}} ->")
+			try:
+				if isinstance(res['repetitions'], RollResult) \
+						and not (len(res['repetitions'].result) == 0 
+								and isinstance(res['repetitions'].result[0], DiceInt)): 
+						#TODO can we improve on that? that's pretty ugly and not versatile
+					# then this is a legit roll, not just a number
+					output_lines.append("{{" + str(res['repetitions']) + "}} ->")
+			except IndexError:
+				# I guess len(result) is 0? 
+				pass
 			
 			for full_roll in res['line']:
 				output_multi = []
@@ -251,7 +264,8 @@ class DiceParser(object):
 		"""
 		
 		# deal with parens
-		# we're doing this before all the 
+		# we're doing this before all the rest because, uh, I forget
+		# honestly it kinda sucks and we should do it differently
 		
 		subrolls = {} # using this as a sort of weird hashtable
 		subroll_index = 0;
@@ -302,9 +316,9 @@ class DiceParser(object):
 			
 			#FIXME: we don't actually do the repetitions
 			
+			multirolls = DiceParser.parse_multiroll(full_roll_match.group('multis'), subrolls)
 			full_rolls.append({	'repetitions': repetitions, 'line': [{	
-					'multirolls': DiceParser.parse_multiroll(
-									full_roll_match.group('multis'), subrolls), 
+					'multirolls': multirolls, 
 					'comment': dist} for dist in distribs] })
 			
 		return full_rolls
@@ -333,10 +347,24 @@ class DiceParser(object):
 				x_roll_result = roll_if_dice(x_roll)
 				repetitions = int(x_roll_result)
 			
-			multi_roll = DiceParser.parse_roll(multimatch.group("rolls"), subrolls)
+			try:
+				multi_roll = DiceParser.parse_roll(multimatch.group("rolls"), subrolls)
+				rolls = [multi_roll.roll() for _ in range(repetitions)]
+				all_rolls.append({ 	'multi': x_roll_result, 
+									'rolls': rolls })
+			except Exception as e: #TODO might need to tighten up what we catch here
+				# if there were other rolls before this one, we can add this line to its comment
+				try:
+					last_rollresult = all_rolls[-1]['rolls'][-1]
+					last_diceresult = last_rollresult.result[-1]
+					last_diceresult.comment += "," + multi_string
+					
+				except:
+					# probably oneof those lists was empty
+					# oh well, at least we tried
+					raise e
 			
-			all_rolls.append({ 	'multi': x_roll_result, 
-								'rolls': [multi_roll.roll() for _ in range(repetitions)] })
+
 		
 		return all_rolls
 		
@@ -547,19 +575,23 @@ def run_test_cases():
 		
 		# comments
 		"2d6 + 5 slashing + 1d8 radiant + 2d6 sneak attack",
-		"1d4 horses.",	#FIXME: RETURNS NULL
+		"1d4 horses.",
+		"2d8 cheeses, for friends",
 		
 		# bedmas
 		"1 + 2 * 3",
 		"1d6 + 2d3 * 2d2",
 		
 		# parens
-		"(1d4)d6",
-		"2d(2d3)",
 		"3 + (2 - 5)",
 		"4 * (6 - 2)",
 		"(1d6-1) + 1",
 		"6 - (4 + (1d4*2) - 3)",
+		
+		# in-dice parens 
+		# TODO should be braces
+		"(1d4)d6",
+		"2d(2d3)",
 		
 		# multirolls
 		"2x 3d4",
@@ -569,14 +601,18 @@ def run_test_cases():
 		"1d4, 1d6, 1d8",
 		"1d3 x 3d6, 1d10",
 		"1, 2d2, 1d3 x 2d6", #FIXME: bad placement of {{}}
-		"2d2 x 1d4 x 2d8", #FIXME maybe? do we want to allow multiple xs?
+		
+		# multi-roll/comment interaction
+		"2d2 x 1d4 x 2d8", # the x2d8 should parse as a comment
+		"1d3 xylophones on 2d3 glockenspiels", #FIXME doesn't roll second 
+		"1d3 x-treme sports", #FIXME does nothing
 		
 		# multi-line rolls
 		"2 # 2d6",
 		"1d4 # 3d4",
 		"2d2 # 2d8",
 		"1d3 # 1d4 x 1d6", #FIXME maybe we should reroll the 1d4 here each time?
-		"1d2, 1d3 # 2d8", #FIXME this doesn't work... but how would that work anyway?
+		#"1d2, 1d3 # 2d8", #FIXME this doesn't work... but how would that work anyway?
 		
 		# distribs
 		"1d10 hats, 2d4 socks for alice",
@@ -609,17 +645,20 @@ if __name__ == "__main__":
 	#q = DiceParser("(10+)")
 	#q = DiceParser("2d(1d20)+7 atk, 2x2d6+1 dmg vs: fart, poop; 1d4 foot")
 	#q = DiceParser("2d(1d20 poop + 1 farts) + 7 atk")
+	q = DiceParser("2# 2d6")
+	print(q)
 	
 	#s = "2x(1d4+1)d(1d8) + 1"
 	#s = "(1d4, 2d6)d3"
-	s = "1d6 fart"
 	#s = "1 + (1d6-1)"
 	#s = "2d2 x 1d4 - (1d6 + 1)"
 	#s = "2x 1 - (1d6+1)"
 	#s = "foo"
 	
-	q = DiceParser(s)
+	q = DiceParser("2d6")
 	print(q)
+	
+	
 	
 	print("============") 
 	

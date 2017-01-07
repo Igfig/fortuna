@@ -215,7 +215,7 @@ class Die(Rollable):
 	def __str__(self):
 		return repr(self)
 	
-	def roll(self, *, status=0):
+	def roll(self, *, status=0, **kwargs):
 		"""
 		@param status: see DieResult for an explanation
 		"""
@@ -239,12 +239,12 @@ class DieResult(Result, int):
 	def __new__(cls, die, status=0):
 			
 		try:
-			#"die" is just a number, so take it as-is
+			# "die" is just a number, so take it as-is
 			die = int(die)	
 			
 		except TypeError:
 			try:
-				#"die" is an actual Die
+				# "die" is an actual Die
 				die = random.randint(1, int(die.size))	
 											
 			except AttributeError:
@@ -372,7 +372,7 @@ class Dice(Rollable, Borrower):
 
 
 class DiceResult(Result, list):
-	#TODO: maybe we should change the iterator function for this so it only gives 
+	# TODO: maybe we should change the iterator function for this so it only gives 
 	# non-dropped dice, and then have a special iterator for getting all dice
 	# including dropped ones
 	# that does cause some troubles with len, and with indexing in general though...
@@ -707,7 +707,7 @@ class DiceInt(int, Rollable, Result):
 	def __str__(self):
 		return self.__repr__()
 	
-	def roll(self):
+	def roll(self, *args, **kwargs):
 		return self
 	
 
@@ -1029,7 +1029,11 @@ def run_test_cases():
 		Dice(1, 6),
 		Dice(1, 6) + 5,
 		Dice(1, 6) * 3,
-		Dice(1, 6) * Dice(1, 4)]
+		Dice(1, 6) * Dice(1, 4),
+		
+		Dice(Dice(2,4), 6),
+		Dice(Dice(2,4).roll(), 6)]
+	
 
 	for test_case in test_cases:
 		result = test_case.roll()
