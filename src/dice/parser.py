@@ -63,7 +63,7 @@ signifiers = ",;:{}\(\)"
 bracestr = "{([\w[\]]*)}"
 numstr = "{[\w[\]]*}|\d+"
 
-dice_manip_str = "(?:(?P<hold>kh|kl|dh|dl|rh|rl)|(?P<advmanip>!!|r|rr)" + \
+dice_manip_str = "(?:(?P<hold>kh|kl|dh|dl|rh|rl|k|d)|(?P<advmanip>!!|r|rr)" + \
 					"(?P<advcond>" + comparators + ")?)(?P<manipnum>" + numstr + \
 					")|(?P<explode>!)"
 commentstr = "(?P<comment>[^" + operators + signifiers + "]*)"
@@ -80,7 +80,7 @@ fullstr = "(?:(?P<numlines>[^#]+)\s*#)?(?P<multis>[^#:]+)(?::(?P<distrib>.*))?"
 
 bracepat = re.compile(bracestr)
 dice_or_int_pat = re.compile(dicestr + "?" + commentstr) #i.e. everything but the first number is optional
-dicepat = re.compile(dicestr + commentstr)
+dice_pat = re.compile(dicestr + commentstr)
 dicepat_without_groups = re.compile(dicestr_without_groups)
 parens_pat = re.compile(parens_str)
 multipat = re.compile(multistr)
@@ -314,12 +314,11 @@ class DiceParser(object):
 			else:
 				distribs = [""] * int(repetitions)
 			
-			#FIXME: we don't actually do the repetitions
+			multis_group = full_roll_match.group('multis')
+			line = [DiceParser._get_multiroll_line(dist, multis_group, subrolls) 
+				for dist in distribs]
 			
-			multirolls = DiceParser.parse_multiroll(full_roll_match.group('multis'), subrolls)
-			full_rolls.append({	'repetitions': repetitions, 'line': [{	
-					'multirolls': multirolls, 
-					'comment': dist} for dist in distribs] })
+			full_rolls.append({	'repetitions': repetitions, 'line': line })
 			
 		return full_rolls
 		
@@ -428,7 +427,7 @@ class DiceParser(object):
 		TODO: get rid of maybe?
 		"""
 		
-		dicematch = re.match(dicepat, to_parse)
+		dicematch = re.match(dice_pat, to_parse)
 		return DiceParser._parse_dice_from_match(dicematch, {})#.roll()
 		
 		# TODO: need to make it so a Dice expression can take another dice-type object as an argument, in place of an int.
@@ -494,13 +493,13 @@ class DiceParser(object):
 			
 					hold = manip_groups["hold"]
 					
-					if hold == 'kh':
+					if hold in ('k', 'kh'):
 						parsed_dice.keep_highest(manipnum)
 					elif hold == 'kl':
 						parsed_dice.keep_lowest(manipnum)
 					elif hold == 'dh':
 						parsed_dice.drop_highest(manipnum)
-					elif hold == 'dl':
+					elif hold in ('d', 'dl'):
 						parsed_dice.drop_lowest(manipnum)
 					elif hold == 'rh':
 						parsed_dice.reroll_highest(manipnum)
@@ -548,6 +547,13 @@ class DiceParser(object):
 			parsed_dice.sort()
 			
 		return parsed_dice
+	
+	@staticmethod
+	def _get_multiroll_line(dist, multis_group, subrolls):
+		return {
+			'multirolls': DiceParser.parse_multiroll(multis_group, subrolls),
+			'comment': dist
+		}
 	
 		
 
@@ -623,11 +629,14 @@ def run_test_cases():
 		"foo",
 		"foo; bar",
 		"(foo, bar)",
-		"('foo')",	#FIXME: returns when it shouldn't
+		"('foo')",	#FIXME: returns when it shouldn't... or at least, errors
 		"foo bar",
 		"foo bar?",
 		"foo bar foo, bar foobar.",
-		'"foo"']
+		'"foo"',
+		
+		#0-indexed dice
+		"6d02"]
 	
 	for test_case in test_cases:
 		parser = DiceParser(test_case)
@@ -655,8 +664,8 @@ if __name__ == "__main__":
 	#s = "2x 1 - (1d6+1)"
 	#s = "foo"
 	
-	q = DiceParser("2d6")
-	print(q)
+	#q = DiceParser("2d6")
+	#print(q)
 	
 	
 	

@@ -201,7 +201,20 @@ class Die(Rollable):
 	dice, decks of cards, etc
 	"""
 	def __init__(self, size):
+		self.lowest = 1
+		#self.size = size
+		
+		try:
+			# check if size is a zero-padded string; if so, start at 0 instead of 1
+			if size.startswith('0'):
+				size = size.lstrip('0')
+				self.lowest = 0
+		except AttributeError:
+			#not a atring I guess
+			pass
+		
 		self.size = size
+		
 	
 	def __eq__(self, other):
 		return self.size == other.size
@@ -215,11 +228,20 @@ class Die(Rollable):
 	def __str__(self):
 		return repr(self)
 	
+	def average(self):
+		'''not the most efficient way to calc this perhaps, but it'll work for 
+		dice with unusual sides'''
+		outcomes = self.outcomes()
+		return sum(outcomes) / len(outcomes)
+	
+	def outcomes(self):
+		size = int(self.size)
+		return list(range(self.lowest, self.lowest + size))
+	
 	def roll(self, *, status=0, **kwargs):
 		"""
 		@param status: see DieResult for an explanation
 		"""
-		#return DieResult(random.randint(1, self.size), status)
 		return DieResult(self, status)
 
 
@@ -237,23 +259,23 @@ class DieResult(Result, int):
 	"""
 
 	def __new__(cls, die, status=0):
-			
+		
 		try:
+			# "die" is an actual Die
+			die = random.choice(die.outcomes())
+			
+		except AttributeError:
 			# "die" is just a number, so take it as-is
 			die = int(die)	
 			
-		except TypeError:
-			try:
-				# "die" is an actual Die
-				die = random.randint(1, int(die.size))	
-											
-			except AttributeError:
-				#"die" is actually a DiceResult or RollResult
+			'''
+			#think this is no longer needed	
+			except TypeError:
+				# "die" is actually a DiceResult or RollResult
 				die = random.randint(1, int(roll_if_dice(die.size)))
-				#might need to use get_value_or_attr(die, "size", die) instead of just die.size, not sure
-		
-				#TODO: may have to handle being given a Dice or Roll 
-				
+			'''
+			# and if it's not one of those, let the exception ride
+			
 		obj = int.__new__(cls, die)
 		obj.status = status
 		return obj
@@ -335,6 +357,8 @@ class Dice(Rollable, Borrower):
 		
 		return full_string
 	
+	def average(self):
+		return self.die.average() * self.number;
 	
 	def roll(self, *, sort=False, status=0):
 		"""@return list of dice rolls"""
@@ -368,7 +392,6 @@ class Dice(Rollable, Borrower):
 	
 	def __rtruediv__(self, other):
 		return Roll(other) / self
-
 
 
 class DiceResult(Result, list):
@@ -611,6 +634,8 @@ class DiceResult(Result, list):
 
 
 	def mode(self):
+		"""as in, the most commonly-seen value"""
+		#TODO this is probably biased towards high or low numbers, right?
 		return max(set(self), key=self.count)
 	
 	def most_common(self): 	#just a convenience alias
@@ -667,17 +692,20 @@ class DiceResult(Result, list):
 	def highest(self, n=1):
 		if n:
 			return sorted(self)[-n:]
-			#return self.filter_mostest(n)
 		else:
 			return []
 	
 	def lowest(self, n=1):
 		if n:
 			return sorted(self)[:n]
-			#return self.filter_mostest(-n)
 		else:
 			return []
 		
+	def single_highest(self):
+		return self.highest()[0]
+
+	def single_lowest(self):
+		return self.lowest()[0]
 	
 	def sum(self):
 		return sum(self)
@@ -770,10 +798,25 @@ class Roll(Rollable, Borrower):
 		
 		return full_string	 
 	
+	def average(self):
+		#TODO check that this works
+		
+		total = DiceInt(self.initial.average())
+		
+		for mc in self.queue[:]: #using a copy of the queue just in case
+			func = getattr(total, mc.name)
+			dice = mc.args[0]
+			total = func(dice.average())
+		
+		return total
+	
+	@property
+	def number(self):
+		return len(self.queue) + 1 # the +1 is for the initial value 
 	
 	def roll(self, sort=False):
 		return RollResult(self, sort)
-
+	
 
 class RollResult(Result): #TODO: add some more sequence emulation methods
 	
@@ -968,7 +1011,7 @@ class RollResult(Result): #TODO: add some more sequence emulation methods
 		"""@rtype: list"""
 		return [r for r in self if func(r, *args)]
 	
-	def find_mostest(self, attr, key, n=1):
+	def find_mostest(self, attr, keyfunc, n=1):
 		"""
 		find which subrolls best match a criterion. Needs a better name.
 		@param attr: the thing we're comparing
@@ -985,7 +1028,8 @@ class RollResult(Result): #TODO: add some more sequence emulation methods
 					best_local_attrs = [getattr(r,attr)]
 				
 				bests += [(a, r) for a in best_local_attrs]
-				bests.sort(key=lambda x: x[0]) #i.e. sort by the keyvalue
+				#bests.sort(key=lambda x: x[0]) #i.e. sort by the keyvalue
+				bests.sort(key=lambda x: keyfunc(x[0])) #i.e. sort by the keyvalue
 				
 				if len(bests) > n:
 					bests = bests[-n:] 
@@ -997,6 +1041,12 @@ class RollResult(Result): #TODO: add some more sequence emulation methods
 		
 	def lowest(self, n=1):
 		return [key for (key, _) in self.find_mostest("lowest", lambda x: -x, n)]
+	
+	def single_highest(self):
+		return self.highest()[0]
+
+	def single_lowest(self):
+		return self.lowest()[0]
 	
 	def total(self):
 		"""
@@ -1104,6 +1154,10 @@ def main():
 	#print(x)
 	#print(x.highest(3))
 	#print(x.drop_lowest(3))
+	
+	v = Die(u)
+	w = DieResult(u)
+	print (w)
 	
 	print("============") 
 	

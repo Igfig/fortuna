@@ -9,3 +9,7 @@ in our setting now there is a chieftain among the lizardfolk of Q'barra who is k
 single quotes are as bad as parens
 allow whatever argument order for RECALL
 NOTE doesn't work in PMs apparently
+rolling lots of large dice can exceed IRC's message length limit
+there is a work temple on the 8th floor
+add a feature that lets us tag something for future attention. And then the parser will refuse to parse that log until I fix it
+insert text here

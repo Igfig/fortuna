@@ -11,7 +11,6 @@ import random
 from dice.rollable import Borrower, Dice, DiceResult 
 from collections import Counter
 
-
 class StrDieResult(str):
 	"""
 	Result of a roll of a die whose sides contain strings.
@@ -58,7 +57,7 @@ class StrDiceResult(DiceResult):
 	
 	def __init__(self, dice, status=0):
 		self.rolls = [die.roll() for die in dice.pool]
-		self.result = Counter("".join(self.rolls))
+		self.result = Counter(self.rolls)
 		
 		for can in dice.cancels:
 			smallest = min(can, key=lambda x:self.result[x])
@@ -73,39 +72,9 @@ class StrDiceResult(DiceResult):
 		out = "[" + ", ".join(self.rolls) + "] = "
 		
 		for roll, num in sorted(self.result.items()):
-			out += roll * num
+			out += roll * num 
 		
 		return out
-
-
-class CardDeck:
-	"""
-	a 52-card deck of playing cards.
-	Uses strings instead of numbers, so I don't know how well it'll work with 
-	all the math.
-	
-	not sure exactly how to relate it to strdice yet
-	"""
-	def __init__(self):
-		names = range(2, 10) + ['J', 'Q', 'K', 'A']
-		suits = ['c', 'd', 'h', 's']
-		self.cards = [str(n) + s for s in suits for n in names]
-		self.discard = []
-
-# 	@classmethod
-# 	def join(cls, *dice):
-# 		rawstr = str(sorted("".join(dice)))
-# 		
-# 		#clear out symbols that cancel each other
-# 		for cancel_group in cls.cancel_groups:
-# 			if cancel_group.issubset(set(rawstr)):
-# 				for cg in cancel_group:
-# 					rawstr = rawstr.replace(cg, '')
-# 		
-# 		return StrDieResult(rawstr)
-# 		#return StrDieResult(str(self).__add__(str(other)), status=0) 
-# 		#not sure if I actually want to convert other to str
-
 
 if __name__ == '__main__':
 	pass

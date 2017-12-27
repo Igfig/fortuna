@@ -12,34 +12,42 @@ TODO: more config
 	default sort mode, visibility for dropped/added dice
 """
 
-import irc.bot, irc.client
-import queue, random, threading, copy, re, configparser, os
+import configparser
+import copy
+import os
+import queue
+import random
+import re
+import threading
+
+from irc import bot, client
+
 import dice.starwars
 from dice.fortuna import Message, Fortuna
 from dice.fortuna.irc.logger import Logger
-
 
 PARSERS = {	'default':	dice.parser.DiceParser,
 			'starwars':	dice.starwars.parser.StarWarsParser }
 
 COMMAND_PAT = re.compile("(?P<command>[A-Z_]+)\s+(?P<text>.*)")
 
-class FortunaBot(irc.bot.SingleServerIRCBot):
+
+class FortunaBot(bot.SingleServerIRCBot):
 	"""
 	The part of Fortuna that interacts with IRC
 	"""
 
-	def __init__(self, config, controller):
+	def __init__(self, controller, config):
 		logpath = config['BOT CONFIG']['log_path']
 		port = int(config['BOT CONFIG']['port'])
 		server = config['BOT CONFIG']['server']
 		nickname = config['BOT CONFIG']['nickname']
 		
-		irc.bot.SingleServerIRCBot.__init__(self, [(server, port)], 
+		bot.SingleServerIRCBot.__init__(self, [(server, port)],
 					nickname, #TODO: might modify this?
 					 nickname)
 		
-		#these have to come after the bot is initialized
+		# these have to come after the bot is initialized
 		self.password = config['BOT CONFIG']['password']
 		self.notepath = config['BOT CONFIG']['note_file']
 		self.channels = config['BOT CONFIG']['channels'].split(',')
@@ -87,16 +95,15 @@ class FortunaBot(irc.bot.SingleServerIRCBot):
 			
 		else:
 			command = "privmsg"
-			#and line stays as is
+			# and line stays as is
 			
-		#TODO return the right kind of message
+		# TODO return the right kind of message
 		return IRCMessage(self._nickname, target, command, line, **extra_kwargs)
 		
-		"""
-		if command not in irc.events.protocol:
-			#we're being told to do a command that isn't really a valid command
-			return
-		"""
+		# if command not in irc.events.protocol:
+		# 	#we're being told to do a command that isn't really a valid command
+		# 	return
+	
 	
 	
 	"""
@@ -104,7 +111,7 @@ class FortunaBot(irc.bot.SingleServerIRCBot):
 	"""
 	def get_command_lines(self, msg):
 		match = COMMAND_PAT.match(msg.line)
-			
+		
 		if not match:
 			return []
 		
@@ -136,8 +143,8 @@ class FortunaBot(irc.bot.SingleServerIRCBot):
 			# See, the * unpacks the tuple that is num_lines, right?
 			# An empty tuple unpacked is nothing, not even None.
 			# recall(context, *()) is identical to recall(context)
-			# so we can use recall()'s own default values 
-			# instead of specifying one ourselves 
+			# so we can use recall()'s own default values
+			# instead of specifying one ourselves
 		
 		return []
 		
@@ -150,15 +157,14 @@ class FortunaBot(irc.bot.SingleServerIRCBot):
 			reply = self.create_reply(msg, line)
 			self.send_and_log(reply)
 
-	
 	def log(self, msg):
 		if msg.target:
 			self.queue_to_logger.put(msg)
 		
 		else:
 			for channel_name, channel in self.channels.items():
-				if msg.source in channel.users() or (hasattr(msg, 'fakesource') 
-						and msg.fakesource in channel.users()): 
+				if msg.source in channel.users() or (hasattr(msg, 'fakesource')
+						and msg.fakesource in channel.users()):
 					# 'fakesource' is forsituations where msg.source would not 
 					# be an accurate representation of the speaker's identity
 					# e.g. if the speaker's nick changes, so the old nick that's 
@@ -175,26 +181,28 @@ class FortunaBot(irc.bot.SingleServerIRCBot):
 	def on_join(self, connection, event):
 		msg = IRCMessage.from_event(event)
 		if msg.source != self._nickname:
-			#FIXME: this might not work if she's using an alternate nick
-			#don't need to record own joining
+			# FIXME: this might not work if she's using an alternate nick
+			# don't need to record own joining
 			msg.line += "joined."
 			self.log(msg)
 	
 	def on_nick(self, connection, event):
-		msg = IRCMessage.from_event(event, target=None, line="is now known as " + event.target + ".", fakesource=event.target)
+		msg = IRCMessage.from_event(event, target=None,
+									line="is now known as " + event.target + ".",
+									fakesource=event.target)
 		#treat as if they're named their new name, because the channel doesn't have anybody in it with the old name
 		self.log(msg)
 		
 	def on_nicknameinuse(self, connection, event):
-		connection.nick(connection.get_nickname() + str(random.randrange(10000))) 
-		# this is a pretty bad idea if you expect more than 
+		connection.nick(connection.get_nickname() + str(random.randrange(10000)))
+		# this is a pretty bad idea if you expect more than
 		# a thousand or so users at a time, so
 		# TODO: make better
 	
 	def on_notice(self, connection, event):
 		msg = IRCMessage.from_event(event)
 		self.log(msg)
-		#you're not supposed to reply to notices, see
+		# you're not supposed to reply to notices, see
 	
 	def on_privmsg(self, connection, event):
 		msg = IRCMessage.from_event(event)
@@ -229,7 +237,6 @@ class FortunaBot(irc.bot.SingleServerIRCBot):
 			connection.join(channel)
 			print('Connected to ' + channel)
 	
-	
 	def send_and_log(self, msg):
 		if msg.command == "action":
 			self.connection.action(msg.target, msg.line)
@@ -242,11 +249,10 @@ class FortunaBot(irc.bot.SingleServerIRCBot):
 					self.connection.kick(channel, msg.tokick, msg.line)
 		
 		else:
-			self.connection.privmsg(msg.target, msg.line)			
+			self.connection.privmsg(msg.target, msg.line)
 		self.log(msg)
 	
-	
-	def start(self):
+	def bot_start(self):
 		"""Start the bot."""
 		self._connect()
 		self.connection.pass_(self.password)
@@ -269,7 +275,7 @@ class FortunaBot(irc.bot.SingleServerIRCBot):
 				self.send_and_log(reply)
 			
 		except queue.Empty:
-			#that's fine, qon't always be a message to print.
+			# that's fine, won't always be a message to print.
 			pass
 
 
@@ -289,13 +295,12 @@ class IRCMessage(Message):
 		
 		super().__init__(line, **kwargs)
 		
-	
 	def __str__(self):
 		if self.is_spoken():
-			#return "[" +  self.target + "] " + self.source + ": " + self.line
+			# return "[" +  self.target + "] " + self.source + ": " + self.line
 			return self.source + ": " + self.line
-		else: 
-			#return "[" +  self.target + "] " + self.source + " " + self.line
+		else:
+			# return "[" +  self.target + "] " + self.source + " " + self.line
 			return self.source + " " + self.line
 	
 	def copy_with_kwargs(self, **kwargs):
@@ -321,34 +326,35 @@ class IRCMessage(Message):
 		return self.target == None
 	
 	def is_channel(self):
-		return irc.client.is_channel(self.target)
+		return client.is_channel(self.target)
 	
 	def is_spoken(self):
 		return self.command in ("pubmsg", "privmsg", "pubnotice", "privnotice")
 	
 	
 def set_default_config():
-	#TODO do we even really need this function
+	# TODO do we even really need this function
+	# well, part of this could go in the controller I guess
 	config = configparser.ConfigParser()
 	config['BOT CONFIG'] = {'channels': "#pwot_dnd, #pwot_dnd2",
 							'nickname': "Fortuna",
-							'server':	"irc.nj.us.mibbit.net",
+							'server': "irc.nj.us.mibbit.net",
 							'banter_file': "banter.json",
 							'note_file': "notes.txt",
 							'log_path': "logs/",
-							'port':		"6667",
-							'parser':	"default",
-							'password': "borkle"} 
-							#TODO: don't just make our password public, dude
+							'port':	"6667",
+							'parser': "default",
+							'password': "borkle"}
+							# TODO: don't just make our password public, dude
 	
 	config['LOGGER CONFIG'] = {	'gms': "Igfig",
 								'bots': config['BOT CONFIG']['Nickname']}
 	
 	with open("../../../../config.ini", 'w') as configfile:
 		config.write(configfile)
-		# FIXME change all the paths to be relative to the location of the config 
+		# FIXME change all the paths to be relative to the location of the config
 		# file, not this folder
-		# or rather, we want to be able to input the paths that way, and have it 
+		# or rather, we want to be able to input the paths that way, and have it
 		# automatically change them internally as needed
 		
 
@@ -362,7 +368,7 @@ def main():
 		if not os.path.isabs(location):
 			config['BOT CONFIG'][path] = "../../../../" + location.lstrip('/')
 	
-	Fortuna(config, FortunaBot)
+	Fortuna(FortunaBot, config)
 	
 
 if __name__ == "__main__":

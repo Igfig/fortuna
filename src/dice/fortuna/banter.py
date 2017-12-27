@@ -52,7 +52,7 @@ class BanterController(object):
 				
 			#do we need to break the sequence now
 			if exchange.stop_progression:
-				break; 
+				break
 		
 		return response_lines
 	

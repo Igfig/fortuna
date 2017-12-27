@@ -6,8 +6,10 @@ Created on Jul 1, 2015
 TODO: someday maybe have it get logged with all the html styling.
 Like, instead of writing directly to a file, pipe it to logparser.
 (which needs a better name)
-"""
 
+TODO can we leverage the python logging module better?
+"""
+import codecs
 import datetime, traceback
 from queue import Empty
 
@@ -26,7 +28,7 @@ class Logger(object):
 				str(datetime.date.today()) + ".txt"
 	
 	def log(self, msg):		
-		with open(self.get_logpath(msg.context), 'a') as logfile:
+		with open(self.get_logpath(msg.context), 'a', encoding="utf_8") as logfile:
 			try:
 				logfile.write(str(msg) + "\n")
 				

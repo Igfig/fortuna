@@ -2,6 +2,15 @@
 Created on Mar 21, 2015
 
 @author: Ira
+
+What this does is: 
+You pass it another class, the "harvestee".
+If you call a method on this class and it doesn't find it, it looks for the 
+method in the other class instead.
+If the method is found there, instead of calling it directly, it adds the method 
+and arguments to a queue as a partial function.
+Later on, you can pop items from the queue and call them on some instance of the 
+harvestee class.
 """
 
 import inspect
@@ -58,3 +67,13 @@ class StoringMethodCaller:
 
 	def __call__(self, obj):
 		return getattr(obj, self.name)(*self.args, **self.kwargs)
+	
+	def call_with_function(self, func, obj=None):
+		if obj:
+			tocall = getattr(obj, func.__name__)
+		else:
+			tocall = func 
+		return tocall(*self.args, **self.kwargs)
+	
+	def call_on_args(self, obj, *args, **kwargs):
+		return getattr(obj, self.name)(*args, **kwargs)

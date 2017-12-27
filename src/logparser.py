@@ -17,20 +17,31 @@ TODO: preface a line with $ to mark it as a spoiler; in the logs it will
         a $ as well? And print that line in white too.
         Actually it might be possible to just detect if a line is in white or not.
 TODO merge config into one file
-TODO add config options for the patterns for IC, OOC, spoilers I guess
+TODO add config options for the patterns for IC, OOC, spoilers I guess MOSTLY DONE
+TODO add parser command PARSER that, if the parser finds any lines starting 
+	with that, it prints out a list of line numbers and lines with such commands 
+	on them, and you have to go deal with them before it'll parse properly
+
+TODO in the js step, add ability to cross out lines (using a checkbox input), 
+	which will make them not show up when read
+	also: drag and drop to reorder lines 
 """
 
 import re, os, configparser, tkinter.filedialog
 
 CONFIG_PATH = "../logparser.ini"
 
-linepat = re.compile("(^[^:]*:)(.*)")
-linkpat = re.compile("http(?:s)?://\S*")
-dicepat = re.compile("^\s*(\d+#\s*)?\d+\s*d\s*\d+", re.I)
-retpat  = re.compile("^`(<+)(\d*)")	# markers for whether a previous line is IC
+line_pat	= re.compile("(^[^:]*:)(.*)")
+link_pat	= re.compile("http(?:s)?://\S*")
+dice_pat	= re.compile("^\s*(\d+#\s*)?\d+\s*d\s*\d+", re.I)
+ret_pat		= re.compile("^`(<+)(\d*)")	# markers for whether a previous line is IC
+img_pat		= re.compile("\.(jpg|jpeg|png|gif)$");
+juke_pat 	= re.compile("eternal\.abimon\.org");
+youtube_pat	= re.compile("youtube\.com/watch\?v=|youtu\.be/");
+looper_pat	= re.compile("infinitelooper");
 
 def divide_line(line):
-	match = re.match(linepat, line.strip())
+	match = re.match(line_pat, line.strip())
 	if not match:
 		# this is probably a server command
 		return ("server", line.strip())
@@ -63,11 +74,20 @@ def wrap_link(linkmatch):
 		Ideally: download images, and put all of them inline if possible.
 		Possibly just as thumbnails.
 	"""
-	return "<a href='" + linkmatch.group(0) + "' target='_blank'>" \
-			+ linkmatch.group(0) + "</a>"
+	link = linkmatch.group(0)
+	
+	if re.search(img_pat, link):
+		return '<a href="' + link + '" target="_blank"><img src="' + link + '"></a>'
+	# TODO download images and maybe create thumbnails
+	
+	if re.search(youtube_pat, link):
+		newlink = re.sub(youtube_pat, "youtube.com/embed/", link)
+		return '<iframe width="560" height="315" src="' + newlink + '" frameborder="0"></iframe>'
+	
+	return '<a href="' + link + '" target="_blank">' + link + '</a>'
 
 def normalize_name(s):
-	return '^' + s.lower() + '$'
+	return s.lower()
 
 class LogParser():
 	def __init__(self, config):
@@ -86,7 +106,7 @@ class LogParser():
 					speaker, text = divide_line(line)
 					speaker = speaker.lower()
 					speaker_class = self.get_speaker_class(speaker)
-					retmatch = re.match(retpat, text)
+					retmatch = re.match(ret_pat, text)
 					
 					if retmatch: #mark a line as actually IC
 						lines_to_go_back = len(retmatch.group(1))
@@ -111,7 +131,7 @@ class LogParser():
 						line_class = "ic"
 					elif speaker == "server":
 						line_class = "ic"
-					elif self.bot_pattern.search(speaker) or re.search(dicepat, text):
+					elif self.bot_pattern.search(speaker) or re.search(dice_pat, text):
 						line_class = "ic"
 					else:
 						line_class = "ooc"
@@ -127,9 +147,11 @@ class LogParser():
 	def write_lines(self, out):
 		with open(out, "w") as outfile:
 			for line in self.parsed_lines:		
-				outfile.write("\t<blockquote class='" + line["speaker_class"] 
-						+ line["line_class"] + "'><cite>" + line["speaker"] 
-						+ ":</cite><p>" + line["markedup_text"] 
+				outfile.write("\t<blockquote class='" 
+						+ line["speaker_class"] 
+						+ line["line_class"] 
+						+ "'><cite>" + line["speaker"] + ":</cite><p>" 
+						+ line["markedup_text"] 
 						+ "</p></blockquote>\n")
 	
 	def _get_bot_pattern(self, config):
@@ -177,7 +199,7 @@ class LogParser():
 		markedup_text = re.sub('—', "&mdash;", markedup_text)
 		markedup_text = markedup_text.replace('<', "&lt;")
 		markedup_text = markedup_text.replace('>', "&gt;")
-		markedup_text = re.sub(linkpat, wrap_link, markedup_text)
+		markedup_text = re.sub(link_pat, wrap_link, markedup_text)
 		
 		return markedup_text
 

@@ -9,7 +9,7 @@ from dice import Roll
 from dice.parser import DiceParser, numstr
 
 
-dicepat = re.compile("(?P<dicenum>\d+)d(?P<diesize>6?)")
+dice_pat = re.compile("(?P<dicenum>\d+)d(?P<diesize>6?)")
 
 class ParanoiaParser(DiceParser):
 	

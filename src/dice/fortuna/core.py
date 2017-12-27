@@ -24,13 +24,20 @@ PARSERS = {	'default' :			DiceParser,
 			'starwars' : 		StarWarsParser,
 			'StarWarsParser' :	StarWarsParser }
 
-"""
-The default bot for if no other is provided. Just pulls continuously from 
-standard in.
-"""
+DEFAULT_CONFIG = {"BOT CONFIG": {
+	"nickname": "Fortuna",
+	"banter_file": "C:/xampp/htdocs/Fortuna/fortuna-master/banter.json",
+	"parser": "default"
+}}
+
+
 class DefaultBot:
+	"""
+	The default bot for if no other is provided. Just pulls continuously from
+	standard in.
+	"""
 	
-	def __init__(self, config, controller):
+	def __init__(self, controller, config):
 		self.name = config["BOT CONFIG"]["nickname"]
 		self.queue_to_bot = controller.queue_to_bot
 		self.queue_to_controller = controller.queue_to_controller
@@ -43,21 +50,21 @@ class DefaultBot:
 			try:
 				print(self.name + ":", self.queue_to_bot.get(block=False)[0])
 			except queue.Empty:
-				pass	
+				pass
 	
 	def start_input(self):
 		while True:
 			self.queue_to_controller.put(Message(input()))
 			
 			
-"""
-The central controller for Fortuna. The bot, and some other components, will 
-differ depending on our medium (command line, irc, web app, etc), but this
-class will always be part of the package. 
-"""
-class Fortuna(object):
+class Fortuna:
+	"""
+	The central controller for Fortuna. The bot, and some other components, will
+	differ depending on our medium (command line, irc, web app, etc), but this
+	class will always be part of the package.
+	"""
 
-	def __init__(self, config, botClass=DefaultBot):
+	def __init__(self, bot_class, config=DEFAULT_CONFIG):
 		# parse config
 		self.name = config['BOT CONFIG']['nickname']
 		banter_file = config['BOT CONFIG']['banter_file']
@@ -69,7 +76,7 @@ class Fortuna(object):
 			try:
 				self.parsers.append(PARSERS[pname])
 			except KeyError:
-				#that parser isn't in the list
+				# that parser isn't in the list
 				pass
 		
 		# create queues
@@ -81,35 +88,39 @@ class Fortuna(object):
 		controller_thread.start()
 		
 		# init bot and make its thread
-		bot = botClass(config, self)
-		bot_thread = threading.Thread(target=bot.start)
+		bot = bot_class(self, config)
+		bot_thread = threading.Thread(target=bot.bot_start)
 		bot_thread.start()
 		
-
 	def start(self):
 		print("Starting " + self.name)
 		
 		while True:
-			msg = self.queue_to_controller.get()
-					
+			try:
+				msg = self.queue_to_controller.get()
+			except queue.Empty:
+				continue
+			
 			responses = self.handle_msg(msg)
 			
 			for response in responses:
 				self.queue_to_bot.put((response, msg))
 			
-	
 	"""
 	@param msg: a Message object
 	"""
+	
 	def handle_msg(self, msg):
 		responses = []
 		parsed = []
 		exceptions = []
 		
 		for parser in self.parsers:
+			# we want to catch and log any and all excpetions, so:
+			# noinspection PyBroadException
 			try:
 				parsed.append(parser(msg.line))
-			except:
+			except Exception:
 				exceptions.append(sys.exc_info())
 			
 		if exceptions and not parsed:
@@ -131,7 +142,7 @@ class Fortuna(object):
 				try:
 					line = msg.source + ", " + output
 				except AttributeError:
-					#no source or username was specified
+					# no source or username was specified
 					line = output
 				
 				responses.append(line)
@@ -139,8 +150,7 @@ class Fortuna(object):
 		return responses
 		
 	
-
-class Message(object):
+class Message:
 	def __init__(self, line, **kwargs):
 		self.line = line
 		
@@ -149,7 +159,6 @@ class Message(object):
 			
 	def __str__(self):
 		return self.line
-
 
 
 def main():
@@ -161,7 +170,7 @@ def main():
 		"parser": "default, starwars"
 	}}
 	
-	Fortuna(config);
+	Fortuna(DefaultBot, config)
 
 
 
