@@ -3,3 +3,4 @@ logs
 /.pydevproject
 __pycache__
 /.settings
+/src/dice/fortuna/discord/token.txt
