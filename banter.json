@@ -30,7 +30,8 @@
 			["ACTION blushes."], 
 			["ACTION smiles shyly."],
 			["ACTION giggles."],
-			["Oh my."]
+			["Oh my."],
+			["<3"]
 		],
 		"types" : ["flattered"],
 		"stop_progression" : false

@@ -7,14 +7,14 @@ this is still suuuper sketchy
 TODO: d100s as well
 """
 
-from dice.parser import *	#@UnusedWildImport
+from dice.parser import *  # @UnusedWildImport
 from dice.starwars.rollable import BoostDie, SetbackDie, AbilityDie, \
 		DifficultyDie, ProficiencyDie, ChallengeDie, ForceDie, StarWarsDice
 
 
 rollstr = "ROLL\s+([BSADPCF]+)(.*)" 
 
-DICE_NAMES = { #TODO: construct this automatically from the names defined in each die
+DICE_NAMES = {  # TODO: construct this automatically from the names defined in each die
 	"B": BoostDie,
 	"S": SetbackDie,
 	"A": AbilityDie,

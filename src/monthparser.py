@@ -14,7 +14,7 @@ TODO: permit regex in the parser configs, so we can, say, automatically
 	mark anyone with "DM" in their name as a DM
 
 TODO: preface a line with $ to mark it as a spoiler; in the logs it will
-        be made illegible (blurred out, maybe) unless the Show Spoilers box
+		be made illegible (blurred out, maybe) unless the Show Spoilers box
         is checked. IC, print in white.
         And I guess if Fortuna is sent a roll with a $, she'll return it with
         a $ as well? And print that line in white too.
@@ -36,10 +36,10 @@ def divide_line(line):
 	if not match:
 		# this is probably a server command
 		return ("server", line.strip())
-	
+
 	speaker = match.group(1)[:-1] #[:-1] to cut off the colon at the end
 	text = match.group(2).strip()
-	
+
 	return (speaker, text)
 
 def get_configs(filename, loadinto):
@@ -50,7 +50,7 @@ def get_configs(filename, loadinto):
 
 
 def replace_ampersands(line):
-	#return re.sub("(?:^|>)[^<]*(&)(?!gt;|lt;|amp;)[^>]*(?:$|<)", "&amp;", line)				
+	#return re.sub("(?:^|>)[^<]*(&)(?!gt;|lt;|amp;)[^>]*(?:$|<)", "&amp;", line)
 	return re.sub("&", "&amp;", line)
 
 def replace_arrows(line):
@@ -66,25 +66,25 @@ def update_configs(filename, newline):
 		outfile.write("\n" + newline)
 
 def wrap_link(linkmatch):
-	return "<a href='" + linkmatch.group(0) +"' target='_blank'>" + linkmatch.group(0) + "</a>"
-		
+	return "<a href='" + linkmatch.group(0) + "' target='_blank'>" + linkmatch.group(0) + "</a>"
 
 
-loget_configsbots.txt", BOTS)
-loget_configsgms.txt", GMS)
+# XXX what the heck was this?
+# loget_configsbots.txt", BOTS)
+# loget_configsgms.txt", GMS)
 
 
 
 for filename in os.listdir("../logs/eberron2/month/"):
-	
+
 	parsed_lines = []
 
-	with open("../logs/eberron2/month/" + filename, 'r') as infile:
-					
+	with open("../logs/eberron2/month/" + filename, 'r', encoding="utf_8") as infile:
+
 		for line in infile:
 			speaker, text = divide_line(line)
 			speaker = speaker.lower()
-			
+
 			if speaker == "server":
 				speaker_class = "server "
 			elif speaker in BOTS:
@@ -93,25 +93,25 @@ for filename in os.listdir("../logs/eberron2/month/"):
 				speaker_class = "gm "
 			else:
 				speaker_class = ""
-			
+
 			retmatch = re.match(retpat, text)
-			
+
 			if retmatch: #mark a line as actually IC
 				lines_to_go_back = len(retmatch.group(1))
-				
+
 				if retmatch.group(2):
 					lines_to_go_back += min(int(retmatch.group(2)) - 1, 0)
-				
+
 				for line in reversed(parsed_lines):
 					if line["speaker"] == speaker:
 						lines_to_go_back -= 1;
-					
+
 						if not lines_to_go_back:
 							line["line_class"] = "ic"
 							break
-							
+
 				continue
-			
+
 			elif text[0] in ("`", "'"):
 				line_class = "ic" #the space is for joining to the other classes
 				text = text[1:].strip()
@@ -124,31 +124,31 @@ for filename in os.listdir("../logs/eberron2/month/"):
 			else:
 				line_class = "ooc"
 				#line_class = "ic"
-			
-			
+
+
 			#sanitize > and <
 			markedup_text =  replace_arrows(text)
-			
+
 			#process text to mark up links, and maybe images and styling?
 			markedup_text = re.sub(linkpat, wrap_link, markedup_text)
-			
+
 			#sanitize & and �
 			markedup_text = replace_ampersands(markedup_text)
 			markedup_text = replace_emdashes(markedup_text)
-			
+
 			parsed_lines.append({	"speaker": speaker,
 									"speaker_class": speaker_class,
 									"line_class": line_class,
 									"markedup_text": markedup_text })
-				
-				
-				
-	with open("C:/xampp/htdocs/irasite/rpg/logs/parsedlogs/month/" + filename[:-4] + ".html", 'w') as outfile:
-		for line in parsed_lines:		
-			outfile.write("\t<blockquote class='" + line["speaker_class"] + line["line_class"] + "'><cite>" + 
+
+
+
+	with open("C:/xampp/htdocs/irasite/rpg/logs/parsedlogs/month/" + filename[:-4] + ".html", 'w', encoding="utf_8") as outfile:
+		for line in parsed_lines:
+			outfile.write("\t<blockquote class='" + line["speaker_class"] + line["line_class"] + "'><cite>" +
 							line["speaker"] + ":</cite><p>" + line["markedup_text"] + "</p></blockquote>\n")
-				
-				
+
+
 
 
 	print(len(parsed_lines), "lines parsed")

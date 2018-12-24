@@ -50,6 +50,8 @@ FIXME: punctuation in comment causes AttributeError
 
 
 import re
+from abc import ABC
+
 from dice.rollable import Dice, DiceResult, DiceInt, Roll, RollResult, \
 		OPERATOR_FUNCTIONS, COMPARISON_FUNCTIONS, roll_if_dice
 
@@ -67,7 +69,7 @@ dice_manip_str = "(?:(?P<hold>kh|kl|dh|dl|rh|rl|k|d)|(?P<advmanip>!!|r|rr)" + \
 					"(?P<advcond>" + comparators + ")?)(?P<manipnum>" + numstr + \
 					")|(?P<explode>!)"
 commentstr = "(?P<comment>[^" + operators + signifiers + "]*)"
-					
+
 dicestr = "\s*(?P<dicenum>" + numstr + ")(?:d(?P<sort>s)?(?P<diesize>" + \
 			numstr + "|[Ff])" + "(?P<manip>(?:" + dice_manip_str + ")*)" + \
 			"(?:(?P<count>" + comparators + ")(?P<countnum>" + numstr + \
@@ -86,19 +88,29 @@ parens_pat = re.compile(parens_str)
 multipat = re.compile(multistr)
 full_pat = re.compile(fullstr)
 
-dicepat_group_names = re.findall("(?<=P<).*?(?=>)", dicestr) 
+dicepat_group_names = re.findall("(?<=P<).*?(?=>)", dicestr)
 
-#===========================================================================
+
+# ===========================================================================
 # DICE EXPRESSION PARSER 
-#===========================================================================
+# ===========================================================================
 
-class DiceParser(object):
+class BaseParser(ABC):
+	def make_output_lines(self):
+		return NotImplemented
+	
+	@staticmethod
+	def parse(to_parse):
+		return NotImplemented
+
+
+class DiceParser(BaseParser):
 	
 	def __init__(self, to_parse):
 		self.input = to_parse
 		
 		if to_parse.strip()[0] == '"':
-			self.result = False
+			self.result = []
 			return
 		
 		try:
@@ -106,13 +118,11 @@ class DiceParser(object):
 			pass
 			
 		except NotADiceExpressionError:
-			#was not an expression at all
-			self.result = False
-		
+			# was not an expression at all
+			self.result = []
 		
 	def __str__(self):
 		return "\n".join([str(ol) for ol in self.make_output_lines()])
-		
 		
 	def make_output_lines(self):
 
@@ -136,9 +146,9 @@ class DiceParser(object):
 		for res in self.result:
 			try:
 				if isinstance(res['repetitions'], RollResult) \
-						and not (len(res['repetitions'].result) == 0 
-								and isinstance(res['repetitions'].result[0], DiceInt)): 
-						#TODO can we improve on that? that's pretty ugly and not versatile
+						and not (len(res['repetitions'].result) == 0
+								and isinstance(res['repetitions'].result[0], DiceInt)):
+						# TODO can we improve on that? that's pretty ugly and not versatile
 					# then this is a legit roll, not just a number
 					output_lines.append("{{" + str(res['repetitions']) + "}} ->")
 			except IndexError:
@@ -150,12 +160,11 @@ class DiceParser(object):
 				output_groups = []
 				
 				for multiroll in full_roll['multirolls']:
-					if multiroll['multi'] != None: 	# need to specify None because 0 would eval to false
+					if multiroll['multi'] is not None: 	# need to specify None because 0 would eval to false
 													# and in theory we might want to be able to get 0
 						output_multi.append(multiroll['multi'])
 						
 					output_groups.append(multiroll['rolls'])
-				
 				
 				# format the string for the multirolls, if there were any 			
 				
@@ -177,7 +186,7 @@ class DiceParser(object):
 					multi_str += "-> "
 				
 				
-				# format the string for the groups 
+				# format the string for the groups
 				
 				groups_str = ""
 				group_strs = []
@@ -194,21 +203,19 @@ class DiceParser(object):
 						else:
 							group_str += " " + sign + " "
 						
-						
 						if isinstance(og[0], DiceResult):
 							group_str += DiceParser.compile_roll_versions(og)
 						
 						elif isinstance(og[0], RollResult):
 							group_str += "(" + DiceParser.compile_roll_versions(og) + ")"
-								
+							
 						else:
-							#it's just an int
+							# it's just an int
 							group_str += str(og[0])
 							
 					group_strs.append(group_str)
 				
 				groups_str = ", ".join(group_strs)
-				
 				
 				# format the string for the total
 				
@@ -219,7 +226,7 @@ class DiceParser(object):
 					if len(group) > 1:
 						total += "{"
 					
-					total += ", ".join([str(g.total()) for g in group]) 
+					total += ", ".join([str(g.total()) for g in group])
 
 					if len(group) > 1:
 						total += "}"
@@ -227,7 +234,6 @@ class DiceParser(object):
 					totals.append(total)
 				
 				totals_str = ", ".join(totals)
-				
 				
 				# assemble final output string
 				
@@ -249,7 +255,7 @@ class DiceParser(object):
 		if len(group_versions) > 1:
 			group_str += "{"
 			
-		group_str += ", ".join([str(gv) for gv in group_versions]) 
+		group_str += ", ".join([str(gv) for gv in group_versions])
 		
 		if len(group_versions) > 1:
 			group_str += "}"
@@ -268,7 +274,7 @@ class DiceParser(object):
 		# honestly it kinda sucks and we should do it differently
 		
 		subrolls = {} # using this as a sort of weird hashtable
-		subroll_index = 0;
+		subroll_index = 0
 		
 		while True:
 			parens = parens_pat.search(to_parse)
@@ -281,7 +287,6 @@ class DiceParser(object):
 			subrolls[subroll_index] = DiceParser.parse_roll(parens_contents, subrolls)
 			to_parse = parens_pat.sub("{" + str(subroll_index) + "}", to_parse, 1)
 			subroll_index += 1
-			
 			
 		# back to original shit
 		
@@ -296,7 +301,7 @@ class DiceParser(object):
 				continue
 			
 			if re.fullmatch("\d+", full_roll_match.group('multis').strip()):
-				#the match was just a single number, which doesn't need rolling
+				# the match was just a single number, which doesn't need rolling
 				continue
 			
 			if full_roll_match.group('numlines'):
@@ -315,7 +320,7 @@ class DiceParser(object):
 				distribs = [""] * int(repetitions)
 			
 			multis_group = full_roll_match.group('multis')
-			line = [DiceParser._get_multiroll_line(dist, multis_group, subrolls) 
+			line = [DiceParser._get_multiroll_line(dist, multis_group, subrolls)
 				for dist in distribs]
 			
 			full_rolls.append({	'repetitions': repetitions, 'line': line })
@@ -341,7 +346,7 @@ class DiceParser(object):
 			repetitions = 1
 			
 			if multimatch.group("multi"):
-				#we do in fact have a roll x roll situation, so do the first one  
+				#we do in fact have a roll x roll situation, so do the first one
 				x_roll = DiceParser.parse_roll(multimatch.group("multi"), subrolls)
 				x_roll_result = roll_if_dice(x_roll)
 				repetitions = int(x_roll_result)
@@ -349,7 +354,7 @@ class DiceParser(object):
 			try:
 				multi_roll = DiceParser.parse_roll(multimatch.group("rolls"), subrolls)
 				rolls = [multi_roll.roll() for _ in range(repetitions)]
-				all_rolls.append({ 	'multi': x_roll_result, 
+				all_rolls.append({ 	'multi': x_roll_result,
 									'rolls': rolls })
 			except Exception as e: #TODO might need to tighten up what we catch here
 				# if there were other rolls before this one, we can add this line to its comment
@@ -451,7 +456,7 @@ class DiceParser(object):
 					pass
 				
 				try:
-					#if it's anything that's not just a string 
+					#if it's anything that's not just a string
 					dice_groups[k] = eval(dice_groups[k])
 				except:
 					pass
@@ -519,7 +524,7 @@ class DiceParser(object):
 							return advfunc(d, manipnum)
 					
 					if advmanip == "!!":
-						#advanced explode 
+						#advanced explode
 						#def explode_trigger(d):
 						#	return advfunc(d, manipnum)
 						
@@ -610,7 +615,7 @@ def run_test_cases():
 		
 		# multi-roll/comment interaction
 		"2d2 x 1d4 x 2d8", # the x2d8 should parse as a comment
-		"1d3 xylophones on 2d3 glockenspiels", #FIXME doesn't roll second 
+		"1d3 xylophones on 2d3 glockenspiels", #FIXME doesn't roll second
 		"1d3 x-treme sports", #FIXME does nothing
 		
 		# multi-line rolls
@@ -642,7 +647,7 @@ def run_test_cases():
 		parser = DiceParser(test_case)
 		print(test_case, ":\t", parser)
 	
-	#TODO: set up some test cases that should fail, 
+	#TODO: set up some test cases that should fail,
 	#	   and assert what the exceptions should be	
 
 
@@ -669,7 +674,7 @@ if __name__ == "__main__":
 	
 	
 	
-	print("============") 
+	print("============")
 	
 	run_test_cases()
 	

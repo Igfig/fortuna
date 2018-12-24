@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 """
 Created on Jan 4, 2015
@@ -27,35 +27,48 @@ TODO in the js step, add ability to cross out lines (using a checkbox input),
 	also: drag and drop to reorder lines 
 """
 
-import re, os, configparser, tkinter.filedialog
+import configparser
+import os
+import re
+import tkinter.filedialog
 
 CONFIG_PATH = "../logparser.ini"
 
-line_pat	= re.compile("(^[^:]*:)(.*)")
-link_pat	= re.compile("http(?:s)?://\S*")
-dice_pat	= re.compile("^\s*(\d+#\s*)?\d+\s*d\s*\d+", re.I)
-ret_pat		= re.compile("^`(<+)(\d*)")	# markers for whether a previous line is IC
-img_pat		= re.compile("\.(jpg|jpeg|png|gif)$");
-juke_pat 	= re.compile("eternal\.abimon\.org");
-youtube_pat	= re.compile("youtube\.com/watch\?v=|youtu\.be/");
-looper_pat	= re.compile("infinitelooper");
+line_pat = re.compile("(^[^:]*:)(.*)")
+link_pat = re.compile("http(?:s)?://\S*")
+dice_pat = re.compile("^\s*(\d+#\s*)?\d+\s*d\s*\d+", re.I)
+ret_pat = re.compile("^`(<+)(\d*)")  # markers for whether a previous line is IC
+img_pat = re.compile("\.(jpg|jpeg|png|gif)$")
+hr_pat = re.compile("_{3,}")
+juke_pat = re.compile("eternal\.abimon\.org")
+youtube_pat = re.compile("youtube\.com/watch\?v=|youtu\.be/")
+looper_pat = re.compile("infinitelooper")
+
+style_symbols = {
+	# '/': ('em', 'em'),  # FIXME this catches a lot of links
+	'\\*': ('b',),
+	'_': ('u',),
+	'~': ('s',),
+	# '\\^': ('span class="smallcaps"', 'span')  # FIXME class prop should only be on opening tag
+}
+
 
 def divide_line(line):
 	match = re.match(line_pat, line.strip())
 	if not match:
 		# this is probably a server command
-		return ("server", line.strip())
+		return "server", line.strip()
 	
-	speaker = match.group(1)[:-1] #[:-1] to cut off the colon at the end
+	speaker = match.group(1)[:-1]  # [:-1] to cut off the colon at the end
 	text = match.group(2).strip()
 	
-	return (speaker, text)
+	return speaker, text
 
 
 def get_basename(filename):
 	pathless_name = os.path.basename(filename)
 	basename, _, _ = pathless_name.rpartition(".")
-	#Because of some quirks of rpartition, basename will be empty if no . is found.
+	# Because of some quirks of rpartition, basename will be empty if no . is found.
 	
 	if basename:
 		return basename
@@ -86,46 +99,51 @@ def wrap_link(linkmatch):
 	
 	return '<a href="' + link + '" target="_blank">' + link + '</a>'
 
+
 def normalize_name(s):
 	return s.lower()
 
-class LogParser():
+
+class LogParser:
 	def __init__(self, config):
 		self.bot_pattern = self._get_bot_pattern(config)
 		self.gm_pattern = self._get_gm_pattern(config)
 		
 		self.parsed_lines = []
-		
+	
 	def parse_logs(self, *filenames):
 		self.parsed_lines = []
 		
 		for filename in filenames:
-			with open(filename, 'r') as infile:
-							
+			with open(filename, 'r', encoding="utf_8") as infile:
 				for line in infile:
+					
+					if not line.strip():
+						continue
+					
 					speaker, text = divide_line(line)
-					speaker = speaker.lower()
-					speaker_class = self.get_speaker_class(speaker)
+					# speaker = speaker.lower()
+					speaker_class = self.get_speaker_class(speaker.lower())
 					retmatch = re.match(ret_pat, text)
 					
-					if retmatch: #mark a line as actually IC
+					if retmatch:  # mark a line as actually IC
 						lines_to_go_back = len(retmatch.group(1))
 						
 						if retmatch.group(2):
 							lines_to_go_back += min(int(retmatch.group(2)) - 1, 0)
 						
-						for line in reversed(self.parsed_lines):
-							if line["speaker"] == speaker:
-								lines_to_go_back -= 1;
-							
+						for parsed_line in reversed(self.parsed_lines):
+							if parsed_line["speaker"] == speaker:
+								lines_to_go_back -= 1
+								
 								if not lines_to_go_back:
-									line["line_class"] = "ic"
+									parsed_line["line_class"] = "ic"
 									break
-									
+						
 						continue
 					
 					elif text[0] in ("`", "'"):
-						line_class = "ic" #the space is for joining to the other classes
+						line_class = "ic"  # the space is for joining to the other classes
 						text = text[1:].strip()
 					elif text[0] == '"':
 						line_class = "ic"
@@ -138,33 +156,38 @@ class LogParser():
 					
 					markedup_text = self.sanitize_text(text)
 					
-					self.parsed_lines.append({ 	  "speaker": speaker,
-											"speaker_class": speaker_class,
-											   "line_class": line_class,
-											"markedup_text": markedup_text })
+					self.parsed_lines.append({
+						"speaker": speaker,
+						"speaker_class": speaker_class,
+						"line_class": line_class,
+						"markedup_text": markedup_text
+					})
 		return self.parsed_lines
 	
 	def write_lines(self, out):
-		with open(out, "w") as outfile:
-			for line in self.parsed_lines:		
-				outfile.write("\t<blockquote class='" 
-						+ line["speaker_class"] 
-						+ line["line_class"] 
-						+ "'><cite>" + line["speaker"] + ":</cite><p>" 
-						+ line["markedup_text"] 
-						+ "</p></blockquote>\n")
+		with open(out, "w", encoding="utf_8") as outfile:
+			for line in self.parsed_lines:
+				outfile.write("\t<blockquote class='"
+				              + line["speaker_class"]
+				              + line["line_class"]
+				              + "'><cite>" + line["speaker"] + ":</cite><p>"
+				              + line["markedup_text"]
+				              + "</p></blockquote>\n")
 	
-	def _get_bot_pattern(self, config):
+	@staticmethod
+	def _get_bot_pattern(config):
 		bot_names = [normalize_name(bot_name) for bot_name in config["BOTS"]]
 		return re.compile("|".join(bot_names))
 	
-	def _get_gm_pattern(self, config):
+	@staticmethod
+	def _get_gm_pattern(config):
 		base_pattern = "^(dm|gm)|(dm|gm)$"
 		gm_names = [base_pattern] + \
-				[normalize_name(gm_name) for gm_name in config["GMS"]]
+		           [normalize_name(gm_name) for gm_name in config["GMS"]]
 		return re.compile("|".join(gm_names))
 	
-	def get_configs(self, filename):
+	@staticmethod
+	def get_configs(filename):
 		loadinto = []
 		
 		with open("../parserconfigs/" + filename, 'r') as infile:
@@ -173,7 +196,7 @@ class LogParser():
 					loadinto.append(line.strip().lower())
 		
 		return loadinto
-
+	
 	def get_speaker_class(self, speaker):
 		if speaker == "server":
 			speaker_class = "server "
@@ -186,7 +209,8 @@ class LogParser():
 		
 		return speaker_class
 	
-	def sanitize_text(self, text):
+	@staticmethod
+	def sanitize_text(text):
 		"""
 		process text to mark up links, and maybe images and styling?
 		Also converts symbols to entity strings.
@@ -199,9 +223,26 @@ class LogParser():
 		markedup_text = re.sub('—', "&mdash;", markedup_text)
 		markedup_text = markedup_text.replace('<', "&lt;")
 		markedup_text = markedup_text.replace('>', "&gt;")
+		
+		# now for some more optional stuff
 		markedup_text = re.sub(link_pat, wrap_link, markedup_text)
+		markedup_text = re.sub(hr_pat, "<hr />", markedup_text)
+		
+		for symbol, style_tags in style_symbols.items():
+			markedup_text = LogParser.add_styling(markedup_text, symbol, *style_tags)
 		
 		return markedup_text
+	
+	@staticmethod
+	def add_styling(markedup_text, key, start, end=None):
+		if not end:
+			end = start
+			
+		pat = f"{key}(.*?){key}"
+		repl = "<" + start + r">\1</" + end + ">"
+		# can't use a proper string format literal because those don't allow backslashes
+		
+		return re.sub(pat, repl, markedup_text)
 
 
 def main():

@@ -11,7 +11,10 @@ TODO: (maybe?) recognize whether her name was said in the speaker's previous
 TODO: something for "fortuna plz"
 TODO: make the question pattern more versatile
 """
-import json, random, re
+import json
+import random
+import re
+
 
 class BanterController(object):
 	"""
@@ -26,9 +29,8 @@ class BanterController(object):
 
 	def __init__(self, json_path, name="Fortuna"):
 		
-		with open(json_path) as jfile: 
+		with open(json_path) as jfile:
 			self.exchanges = [BanterExchange(name, obj) for obj in json.load(jfile)]
-	
 	
 	def handle_msg(self, msg):
 		types_matched = set()
@@ -36,27 +38,26 @@ class BanterController(object):
 		
 		for exchange in self.exchanges:
 			
-			#skip this exchange if it's of a type we already have a match for
+			# skip this exchange if it's of a type we already have a match for
 			if any(t for t in exchange.types if t in types_matched):
 				continue
 			
-			#see if we have a match
+			# see if we have a match
 			groups = exchange.match(msg, types_matched)
 			
 			if not groups:
 				continue
 			
-			#add this exchange's lines to our response
+			# add this exchange's lines to our response
 			response_lines += exchange.get_response(groups)
 			types_matched.update(exchange.types)
-				
-			#do we need to break the sequence now
+			
+			# do we need to break the sequence now
 			if exchange.stop_progression:
 				break
 		
 		return response_lines
 	
-
 
 class BanterExchange(object):
 	"""
@@ -80,6 +81,9 @@ class BanterExchange(object):
 	"""
 	
 	def __init__(self, name, exchange_dict):
+		self.responses = {}
+		self.stop_progression = False
+		self.types = []
 		
 		# import all the json
 		self.__dict__ = exchange_dict
@@ -87,10 +91,9 @@ class BanterExchange(object):
 		# compile all the regex patterns, to improve long-term performance.
 		# also replace all "<name>" in patterns with the bot's actual name 
 		# (usually Fortuna) 
-		compiled_patterns = [re.compile(pattern.replace("<name>", name), re.I) 
+		compiled_patterns = [re.compile(pattern.replace("<name>", name), re.I)
 								for pattern in self.patterns_text]
 		self.patterns_text = compiled_patterns
-	
 	
 	def get_response(self, groups):
 		"""
@@ -104,14 +107,13 @@ class BanterExchange(object):
 		
 		return response_lines
 	
-	
 	def match(self, msg, types_matched):
 		"""
 		See if the line meets this exchange's criteria.
 		@return any of the matched regex groups
 		"""
 		line = msg.line
-		groups = [line] #because group 0 is always the full pattern
+		groups = [line]  # because group 0 is always the full pattern
 		
 		for pattern in self.patterns_text:
 			match = pattern.search(line)
@@ -120,8 +122,7 @@ class BanterExchange(object):
 				groups += match.groups()
 			
 			except AttributeError:
-				#no match found
+				# no match found
 				return []
 		
 		return groups
-			

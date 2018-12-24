@@ -124,6 +124,8 @@ class FortunaBot(bot.SingleServerIRCBot):
 				return ["Noted."]
 			
 		elif command == "RECALL":
+			# TODO allow args in any order
+			
 			# some defaults
 			num_lines = () # the empty tuple is part of something clever.
 			context = msg.context
@@ -260,12 +262,12 @@ class FortunaBot(bot.SingleServerIRCBot):
 		while True:
 			self.main_loop()
 	
-	
 	def main_loop(self, timeout=0.2):
+		# noinspection PyBroadException
 		try:
 			self.reactor.process_once(timeout)
-		except:
-			#no big deal really, just not fully initialized yet
+		except Exception:
+			# no big deal really, just not fully initialized yet
 			pass
 		
 		try:

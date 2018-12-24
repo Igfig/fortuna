@@ -43,7 +43,7 @@ class Logger(object):
 	def recall(self, context, num_lines=1):
 		# TODO: maybe change the default so that it just tries to repeat 
 		# everything since you logged out?
-		with open(self.get_logpath(context), 'r') as logfile:
+		with open(self.get_logpath(context), 'r', encoding="utf_8") as logfile:
 			return [line.strip() for line in 
 				logfile.readlines()[-num_lines:]] 
 				# yes, if you recall the chat you're in then you'll get back 
