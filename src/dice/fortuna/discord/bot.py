@@ -6,7 +6,7 @@ import asyncio
 import logging
 import queue
 
-from dice.fortuna import Fortuna, Message
+from dice.fortuna import Fortuna, Message, DefaultBot
 from dice.fortuna.irc.logger import Logger
 
 logging.basicConfig(level=logging.INFO)
@@ -22,25 +22,23 @@ logging.basicConfig(level=logging.INFO)
 #client = discord.Client()
 
 
-class FortunaBot:
+class FortunaBot(DefaultBot):
 	
 	def __init__(self, controller, config):
 		# self.loop = asyncio.get_event_loop()
 		
-		super().__init__()
+		super().__init__(controller, config)
 		
 		log_path = ""    # TODO get from config
-		
-		# connect to controller
-		self.queue_to_bot = controller.queue_to_bot
-		self.queue_to_controller = controller.queue_to_controller
 		
 		# set up logger
 		self.queue_to_logger = asyncio.Queue()
 		self.logger = Logger(self.queue_to_logger, log_path)
 		
+		self.client = self.init_client()
+	
+	def init_client(self) -> discord.Client:
 		client = discord.Client()
-		self.client = client
 		
 		@client.event
 		async def on_ready():
@@ -57,7 +55,8 @@ class FortunaBot:
 			# self.log(fortuna_message) # TODO
 			# self.handle_command(fortuna_message) # TODO
 			self.queue_to_controller.put(fortuna_message)
-		
+			
+		return client
 	
 	# @client.event
 	# async def on_ready(self):

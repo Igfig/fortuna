@@ -68,6 +68,8 @@ class DefaultBot:
 	
 	def __init__(self, controller, config):
 		self.name = config["BOT CONFIG"]["nickname"]
+		
+		# connect to controller
 		self.queue_to_bot = controller.queue_to_bot
 		self.queue_to_controller = controller.queue_to_controller
 	
