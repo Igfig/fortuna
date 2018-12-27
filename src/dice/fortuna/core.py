@@ -6,31 +6,56 @@ Created on Jun 8, 2015
 TODO: occasionally when you roll Fortuna will give you all 1s, and then say 
 	"Just kidding" and give you your real result
 TODO: Fortuna keeps track of your rolls and comments on them. 
-	"That's the third 20 you've rolled today. Don't worry, I'm just lulling you 
+	"That's the third 20 you've rolled today. Don't worry, I'm just lulling you
 	into a false sense of security."
-	"That's the third 1 you've rolled today. That's not bad luck, I just don't 
+	"That's the third 1 you've rolled today. That's not bad luck, I just don't
 	like you."
 TODO: MORE TSUNDERE
 TODO: insult level
 """
 
-import queue, random, threading, traceback, sys
+import random, traceback, sys, asyncio
+
+from asyncio.queues import Queue
+from aioconsole import ainput
+
 from dice.parser import DiceParser
 from dice.starwars.parser import StarWarsParser
 from dice.fortuna.banter import BanterController
 from traveller.parser import TravellerParser
 
-PARSERS = {'default': DiceParser,
-           'DiceParser': DiceParser,
-           'starwars': StarWarsParser,
-           'StarWarsParser': StarWarsParser,
-           'traveller': TravellerParser}
+PARSERS = {
+	'default': DiceParser,
+	'DiceParser': DiceParser,
+	'starwars': StarWarsParser,
+	'StarWarsParser': StarWarsParser,
+	'traveller': TravellerParser
+}
 
-DEFAULT_CONFIG = {"BOT CONFIG": {
-	"nickname": "Fortuna",
-	"banter_file": "C:/xampp/htdocs/Fortuna/fortuna-master/banter.json",
-	"parser": "default"
-}}
+DEFAULT_CONFIG = {
+	"BOT CONFIG": {
+		"nickname": "Fortuna",
+		"banter_file": "C:/xampp/htdocs/Fortuna/fortuna-master/banter.json",
+	# FIXME surely we can find a better way to define this. This one only works on my own computer.
+		"parser": "default"
+	}
+}
+
+
+class Message:
+	def __init__(self, line, **kwargs):
+		self.line = line
+		
+		for kwarg, val in kwargs.items():
+			self.__dict__[kwarg] = val
+	
+	def __str__(self):
+		return self.line
+
+
+class Response(Message):
+	def __init__(self, line, original, **kwargs):
+		super().__init__(line, original=original, **kwargs)
 
 
 class DefaultBot:
@@ -44,19 +69,21 @@ class DefaultBot:
 		self.queue_to_bot = controller.queue_to_bot
 		self.queue_to_controller = controller.queue_to_controller
 	
-	def bot_start(self):
-		input_thread = threading.Thread(target=self.start_input)
-		input_thread.start()
-		
-		while True:
-			try:
-				print(self.name + ":", self.queue_to_bot.get(block=False)[0])
-			except queue.Empty:
-				pass
+	async def bot_start(self):
+		await asyncio.gather(self.start_input(), self.read_queue())
 	
-	def start_input(self):
+	async def start_input(self):
 		while True:
-			self.queue_to_controller.put(Message(input()))
+			text = await ainput("")
+			msg = Message(text)
+			await self.queue_to_controller.put(msg)
+	
+	# note that there's no standard interrupt or anything in this barebones version.
+	
+	async def read_queue(self):
+		while True:
+			received = await self.queue_to_bot.get()
+			print(self.name + ":", received.line)
 
 
 class Fortuna:
@@ -68,6 +95,8 @@ class Fortuna:
 	
 	def __init__(self, bot_class, config=DEFAULT_CONFIG):
 		# parse config
+		self.bot_class = bot_class
+		self.config = config
 		self.name = config['BOT CONFIG']['nickname']
 		banter_file = config['BOT CONFIG']['banter_file']
 		self.banter = BanterController(banter_file, self.name)
@@ -82,10 +111,12 @@ class Fortuna:
 				# that parser isn't in the list
 				pass
 		
-		# create queues
-		self.queue_to_controller = queue.Queue()
-		self.queue_to_bot = queue.Queue()
+		# create variables for queues
+		self.queue_to_controller = None
+		self.queue_to_bot = None
 		
+		# XXX we may want to use threads after all, but for now let's try doing it with just async
+		"""
 		# make controller thread
 		controller_thread = threading.Thread(target=self.start)
 		controller_thread.start()
@@ -94,26 +125,37 @@ class Fortuna:
 		bot = bot_class(self, config)
 		bot_thread = threading.Thread(target=bot.bot_start)
 		bot_thread.start()
+		"""
 	
-	def start(self):
+	async def start(self):
 		print("Starting " + self.name)
 		
+		await self.init_queues()
+		bot = self.bot_class(self, self.config)
+		await asyncio.gather(self.run(), bot.bot_start())
+	
+	async def init_queues(self):
+		"""
+		We don't do this inside the constructor because the queues need to be instantiated within
+		the same event loop as everything else.
+		"""
+		# TODO we might be able to use the more in-depth async functions to add this to the event
+		# loop in the constructor
+		self.queue_to_controller = Queue()
+		self.queue_to_bot = Queue()
+	
+	async def run(self):
 		while True:
-			try:
-				msg = self.queue_to_controller.get()
-			except queue.Empty:
-				continue
-			
+			msg = await self.queue_to_controller.get()
 			responses = self.handle_msg(msg)
 			
-			for response in responses:
-				self.queue_to_bot.put((response, msg))
+			for response_line in responses:
+				response = Response(response_line, msg)
+				await self.queue_to_bot.put(response)
 	
-	"""
-	@param msg: a Message object
-	"""
-	
-	def handle_msg(self, msg):
+	# XXX a little worried about how if this takes a long time, it might prevent the bot from
+	# receiving messages. Maybe make this async too? hmm...
+	def handle_msg(self, msg: Message):
 		responses = []
 		parsed = []
 		exceptions = []
@@ -139,9 +181,9 @@ class Fortuna:
 		responses += self.banter.handle_msg(msg)
 		
 		for p in parsed:
-			q = p.make_output_lines()
+			output_lines = p.make_output_lines()
 			
-			for output in q:
+			for output in output_lines:
 				try:
 					line = msg.source + ", " + output
 				except AttributeError:
@@ -153,17 +195,6 @@ class Fortuna:
 		return responses
 
 
-class Message:
-	def __init__(self, line, **kwargs):
-		self.line = line
-		
-		for kwarg, val in kwargs.items():
-			self.__dict__[kwarg] = val
-	
-	def __str__(self):
-		return self.line
-
-
 def main():
 	banter_json_file = "../../../banter.json"
 	
@@ -173,7 +204,8 @@ def main():
 		"parser": "default, starwars, traveller"
 	}}
 	
-	Fortuna(DefaultBot, config)
+	fortuna = Fortuna(DefaultBot, config)
+	asyncio.run(fortuna.start())
 
 
 if __name__ == "__main__":
