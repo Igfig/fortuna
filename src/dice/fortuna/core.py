@@ -36,7 +36,7 @@ DEFAULT_CONFIG = {
 	"BOT CONFIG": {
 		"nickname": "Fortuna",
 		"banter_file": "C:/xampp/htdocs/Fortuna/fortuna-master/banter.json",
-	# FIXME surely we can find a better way to define this. This one only works on my own computer.
+		# FIXME surely we can find a better way to define the default banter file location. This one only works on my own computer.
 		"parser": "default"
 	}
 }
@@ -55,7 +55,9 @@ class Message:
 
 class Response(Message):
 	def __init__(self, line, original, **kwargs):
-		super().__init__(line, original=original, **kwargs)
+		self.original = original
+		
+		super().__init__(line, **kwargs)
 
 
 class DefaultBot:
