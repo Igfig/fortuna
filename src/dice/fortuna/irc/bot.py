@@ -20,6 +20,7 @@ import random
 import re
 import threading
 
+import asyncio
 from irc import bot, client
 
 import dice.starwars
@@ -312,31 +313,51 @@ class FortunaBot(bot.SingleServerIRCBot):
 			self.connection.privmsg(msg.target, msg.line)
 		self.log(msg)
 	
-	def bot_start(self):
+	async def bot_start(self):
 		"""Start the bot."""
 		self._connect()
 		self.connection.pass_(self.password)
 		
-		while True:
-			self.main_loop()
-	
-	def main_loop(self, timeout=0.2):
-		# noinspection PyBroadException
-		try:
-			self.reactor.process_once(timeout)
-		except Exception:
-			# no big deal really, just not fully initialized yet
-			pass
+		# TODO basically we just have to reimplement irc.client.Reactor.process_forever() in an async idiom, I think? Or we might have to go up a level and change Reactor.process_once()
 		
-		try:
-			line, original_msg = self.queue_to_bot.get(block=False)
-			reply = self.create_reply(original_msg, line)
+		await asyncio.gather(self.start_input(), self.read_queue())
+	
+	async def start_input(self):
+		timeout = 0.2
+		
+		while True:
+			# noinspection PyBroadException
+			try:
+				self.reactor.process_once(timeout) # FIXME this will block async!
+			except Exception:
+				# no big deal really, just not fully initialized yet
+				pass
+			await asyncio.sleep(timeout)  # but this will help a bit
+		
+	async def read_queue(self):
+		while True:
+			response = await self.queue_to_bot.get()
+			reply = self.create_reply(response.original, response.line)
 			if reply:
 				self.send_and_log(reply)
-		
-		except queue.Empty:
-			# that's fine, won't always be a message to print.
-			pass
+	
+	# def main_loop(self, timeout=0.2):
+	# 	# noinspection PyBroadException
+	# 	try:
+	# 		self.reactor.process_once(timeout)
+	# 	except Exception:
+	# 		# no big deal really, just not fully initialized yet
+	# 		pass
+	#
+	# 	try:
+	# 		line, original_msg = self.queue_to_bot.get(block=False)
+	# 		reply = self.create_reply(original_msg, line)
+	# 		if reply:
+	# 			self.send_and_log(reply)
+	#
+	# 	except queue.Empty:
+	# 		# that's fine, won't always be a message to print.
+	# 		pass
 
 
 def set_default_config():
