@@ -65,6 +65,7 @@ class DefaultBot:
 	The default bot for if no other is provided. Just pulls continuously from
 	standard in.
 	"""
+	# FIXME banter actions don't work correctly in this context
 	
 	def __init__(self, controller, config):
 		self.name = config["BOT CONFIG"]["nickname"]
@@ -81,8 +82,7 @@ class DefaultBot:
 			text = await ainput("")
 			msg = Message(text)
 			await self.queue_to_controller.put(msg)
-	
-	# note that there's no standard interrupt or anything in this barebones version.
+			# note that there's no standard interrupt or anything in this barebones version.
 	
 	async def read_queue(self):
 		while True:
@@ -118,6 +118,8 @@ class Fortuna:
 		# create variables for queues
 		self.queue_to_controller = None
 		self.queue_to_bot = None
+		
+		asyncio.run(self.start())
 		
 		# XXX we may want to use threads after all, but for now let's try doing it with just async
 		"""
@@ -189,6 +191,7 @@ class Fortuna:
 			
 			for output in output_lines:
 				try:
+					# noinspection PyUnresolvedReferences
 					line = msg.source + ", " + output
 				except AttributeError:
 					# no source or username was specified
@@ -208,8 +211,7 @@ def main():
 		"parser": "default, starwars, traveller"
 	}}
 	
-	fortuna = Fortuna(DefaultBot, config)
-	asyncio.run(fortuna.start())
+	Fortuna(DefaultBot, config)
 
 
 if __name__ == "__main__":
