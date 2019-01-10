@@ -74,7 +74,7 @@ class DefaultBot:
 		self.queue_to_bot = controller.queue_to_bot
 		self.queue_to_controller = controller.queue_to_controller
 	
-	async def bot_start(self):
+	async def start(self):
 		await asyncio.gather(self.start_input(), self.read_queue())
 	
 	async def start_input(self):
@@ -138,7 +138,7 @@ class Fortuna:
 		
 		await self.init_queues()
 		bot = self.bot_class(self, self.config)
-		await asyncio.gather(self.run(), bot.bot_start())
+		await asyncio.gather(self.run(), bot.start())
 	
 	async def init_queues(self):
 		"""
