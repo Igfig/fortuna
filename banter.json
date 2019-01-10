@@ -24,7 +24,7 @@
 		"id" : "compliment_strong",
 		"patterns_text" : [
 			"(?<!to )(?<!from )\\b<name>\\b",
-			"beautiful|darling|dearest|divine|goddess|gorgeous|love|lovely|marry|perfect|waifu|wife"
+			"beautiful|darling|dearest|divine|goddess|gorgeous|adorable|love|lovely|marry|perfect|cute|cutie|waifu|wife"
 		],
 		"responses" : [
 			["ACTION blushes."], 
@@ -132,11 +132,12 @@
 	{
 		"id" : "question",
 		"patterns_text" : [
-			"\\?$",
+			"(is|are|am|was|were|does|do|can|will|did|should|shall).*?(this|that|it|he|she|they|you|we|I).*\\?$",
 			"^<name>|<name>\\?$|, <name>|<name>,"
 		],
 		"responses" : [
 			["Yes."], ["No."], ["Maybe."],
+			["Sure."], ["Not really."],
 			["Probably."], ["Probably not."],
 			["Definitely."], ["Definitely not."],
 			["For sure."], ["I don't think so."],
@@ -155,7 +156,39 @@
 			["God, I wish."], ["In your dreams."],
 			["Maybe if you play your cards right."],
 			["Pretty likely."], ["Pretty unlikely."],
-			["Um."]
+			["Um."],["Not answering that."]
+		],
+		"types" : ["answer"],
+		"stop_progression" : false
+	},
+	{
+		"id" : "question_open_ended",
+		"patterns_text" : [
+			"\\?$|(who|what|when|where|why).*?(is|was|would|do|did)",
+			"^<name>|<name>\\?$|, <name>|<name>,"
+		],
+		"responses" : [
+			["ACTION shrugs"],
+			["I don't actually know."],
+			["I have no idea."], ["Ask again later."],
+			["I could tell you...", "But I probably shouldn't."],
+			["Why would you even ask that?"],
+			["You're asking the wrong question."],
+			["I think we both know that's not your real question."],
+			["It's complicated."], ["It's... weird."],
+			["Um."], ["Not answering that."]
+		],
+		"types" : ["answer"],
+		"stop_progression" : false
+	},
+
+	{
+		"id" : "holiday",
+		"patterns_text" : [
+			"merry.*?christmas|happy.*?holidays"
+		],
+		"responses" : [
+			["Merry winter festival of your choice!"]
 		],
 		"types" : ["answer"],
 		"stop_progression" : false

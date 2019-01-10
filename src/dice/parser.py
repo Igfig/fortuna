@@ -109,12 +109,13 @@ class DiceParser(BaseParser):
 	def __init__(self, to_parse):
 		self.input = to_parse
 		
-		if to_parse.strip()[0] == '"':
+		stripped = to_parse.strip()
+		if stripped and stripped[0] == '"':
 			self.result = []
 			return
 		
 		try:
-			self.result = self.parse(to_parse.strip())
+			self.result = self.parse(stripped)
 			pass
 			
 		except NotADiceExpressionError:
@@ -346,7 +347,7 @@ class DiceParser(BaseParser):
 			repetitions = 1
 			
 			if multimatch.group("multi"):
-				#we do in fact have a roll x roll situation, so do the first one
+				# we do in fact have a roll x roll situation, so do the first one
 				x_roll = DiceParser.parse_roll(multimatch.group("multi"), subrolls)
 				x_roll_result = roll_if_dice(x_roll)
 				repetitions = int(x_roll_result)
@@ -354,9 +355,11 @@ class DiceParser(BaseParser):
 			try:
 				multi_roll = DiceParser.parse_roll(multimatch.group("rolls"), subrolls)
 				rolls = [multi_roll.roll() for _ in range(repetitions)]
-				all_rolls.append({ 	'multi': x_roll_result,
-									'rolls': rolls })
-			except Exception as e: #TODO might need to tighten up what we catch here
+				all_rolls.append({
+					'multi': x_roll_result,
+					'rolls': rolls
+				})
+			except Exception as e:  # TODO might need to tighten up what we catch here
 				# if there were other rolls before this one, we can add this line to its comment
 				try:
 					last_rollresult = all_rolls[-1]['rolls'][-1]

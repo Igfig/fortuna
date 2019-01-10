@@ -15,6 +15,8 @@ import json
 import random
 import re
 
+# FIXME banter actions don't work correctly in the default bot
+
 
 class BanterController(object):
 	"""

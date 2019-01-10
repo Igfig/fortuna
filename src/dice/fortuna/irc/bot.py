@@ -24,6 +24,7 @@ import asyncio
 from irc import bot, client
 
 import dice.starwars
+
 from dice.fortuna import Message, Fortuna
 from dice.fortuna.irc.logger import Logger
 
@@ -204,12 +205,11 @@ class FortunaBot(bot.SingleServerIRCBot):
 		
 		return []
 	
-	"""
-	@param msg: a Message object
-	@return: the string that Fortuna needs to say.
-	"""
-	
 	def handle_command(self, msg):
+		"""
+		@param msg: a Message object
+		@return: the string that Fortuna needs to say.
+		"""
 		for line in self.get_command_lines(msg):
 			reply = self.create_reply(msg, line)
 			self.send_and_log(reply)
@@ -222,7 +222,7 @@ class FortunaBot(bot.SingleServerIRCBot):
 			for channel_name, channel in self.channels.items():
 				if msg.source in channel.users() or (hasattr(msg, 'fakesource')
 				                                     and msg.fakesource in channel.users()):
-					# 'fakesource' is forsituations where msg.source would not 
+					# 'fakesource' is for situations where msg.source would not
 					# be an accurate representation of the speaker's identity
 					# e.g. if the speaker's nick changes, so the old nick that's 
 					# in source doesn't describe them any more
@@ -313,7 +313,7 @@ class FortunaBot(bot.SingleServerIRCBot):
 			self.connection.privmsg(msg.target, msg.line)
 		self.log(msg)
 	
-	async def bot_start(self):
+	async def start(self):
 		"""Start the bot."""
 		self._connect()
 		self.connection.pass_(self.password)
